@@ -10,6 +10,7 @@ public class Program
 
         builder.Services.AddAuthorization();
         builder.Services.AddOpenApi();
+        builder.Services.AddSingleton<ControlPlaneStateStore>();
         builder.Services.AddSingleton<RegistryService>();
         builder.Services.AddHttpClient<CapabilityDiscoveryService>();
 
@@ -25,15 +26,26 @@ public class Program
         app.UseHttpsRedirection();
         app.UseAuthorization();
 
-        app.MapGet("/health", () => Results.Ok(new
+        app.MapGet("/health", (ControlPlaneStateStore stateStore, RegistryService registry) => Results.Ok(new
         {
             ok = true,
             service = "leserpent",
             role = "control-plane",
             version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
+            persistence = new
+            {
+                statePath = stateStore.StatePath,
+                backupStatePath = stateStore.BackupStatePath,
+                lastSavedAt = stateStore.LastSavedAt,
+                isDirty = stateStore.IsDirty,
+                lastSaveError = stateStore.LastSaveError,
+                restoredRuntimeCount = registry.RestoredRuntimeCount,
+                restoredSessionCount = registry.RestoredSessionCount,
+                restoredFromSavedAt = registry.RestoredFromSavedAt,
+            },
         }));
 
-        app.MapGet("/v1/capabilities", () =>
+        app.MapGet("/v1/capabilities", (ControlPlaneStateStore stateStore, RegistryService registry) =>
             Results.Ok(new ServiceCapabilities(
                 "leserpent",
                 typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
@@ -42,6 +54,7 @@ public class Program
                 {
                     "/health",
                     "/v1/capabilities",
+                    "/v1/persistence/save",
                     "/v1/fleet/summary",
                     "/v1/fleet/attention-summary",
                     "/v1/fleet/refresh-all",
@@ -58,7 +71,24 @@ public class Program
                     "/v1/sessions",
                     "/v1/sessions/{id}",
                     "/v1/sessions/{id}/stop",
-                })));
+                },
+                new ServicePersistenceCapabilities(
+                    stateStore.StatePath,
+                    stateStore.BackupStatePath,
+                    stateStore.LastSavedAt,
+                    true,
+                    stateStore.IsDirty,
+                    stateStore.LastSaveError,
+                    registry.RestoredRuntimeCount,
+                    registry.RestoredSessionCount,
+                    registry.RestoredFromSavedAt))));
+
+        app.MapPost("/v1/persistence/save", (RegistryService registry) =>
+            Results.Ok(new
+            {
+                ok = true,
+                savedAt = registry.SaveNow(),
+            }));
 
         app.MapGet("/v1/fleet/summary", (string? environment, string? cluster, string? role, RegistryService registry) =>
             Results.Ok(new

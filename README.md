@@ -197,10 +197,54 @@ runtime：
 当前这层故意保持很轻：
 
 - 现在已经能主动抓取 gewyvern `/v1/capabilities`
+- runtime registry / session state 现在会持久化到本地 state file
 - 还没有真实 gRPC runtime client
 - 还没有 pairing / signing
 - 还没有 RBAC / audit persistence
-- 还没有 UI
+
+### 当前持久化行为
+
+当前 `leserpent` 会把 control-plane 状态持久化到本地 JSON 文件：
+
+- 默认路径：
+  - `src/Leserpent/data/control-plane-state.json`
+- very-light backup:
+  - `src/Leserpent/data/control-plane-state.json.bak`
+- 可用环境变量覆盖：
+  - `LESERPENT_STATE_PATH=/path/to/control-plane-state.json`
+
+当前会恢复和保存：
+
+- registered runtimes
+- discovered capabilities
+- latest runtime status snapshots
+- created sessions
+
+也就是说，重启 `leserpent` 后，runtime registry 和 session 列表不会重新变成空白。
+
+当前这些 very-light persistence signals 也会直接暴露出来：
+
+- `GET /health`
+  - `persistence.statePath`
+  - `persistence.backupStatePath`
+  - `persistence.lastSavedAt`
+  - `persistence.isDirty`
+  - `persistence.lastSaveError`
+  - `persistence.restoredRuntimeCount`
+  - `persistence.restoredSessionCount`
+  - `persistence.restoredFromSavedAt`
+- `GET /v1/capabilities`
+  - `persistence.enabled`
+  - `persistence.statePath`
+  - `persistence.backupStatePath`
+  - `persistence.lastSavedAt`
+  - `persistence.isDirty`
+  - `persistence.lastSaveError`
+  - `persistence.restoredRuntimeCount`
+  - `persistence.restoredSessionCount`
+  - `persistence.restoredFromSavedAt`
+- `POST /v1/persistence/save`
+  - very-light manual flush of current control-plane state
 
 它的目标是先把最小控制面 contract 站住：
 

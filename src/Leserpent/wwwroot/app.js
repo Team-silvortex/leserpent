@@ -7,11 +7,16 @@ const state = {
   runtimeSearch: "",
   runtimeSort: "name",
   selectedRuntimeId: null,
+  latestRuntimes: [],
+  registerNameTouched: false,
 };
 
 const nodes = {
   fleetSummaryCards: document.getElementById("fleet-summary-cards"),
   fleetSummaryGroups: document.getElementById("fleet-summary-groups"),
+  persistenceCards: document.getElementById("persistence-cards"),
+  persistenceDetails: document.getElementById("persistence-details"),
+  persistenceSaveNow: document.getElementById("persistence-save-now"),
   attentionSummaryCards: document.getElementById("attention-summary-cards"),
   attentionReasons: document.getElementById("attention-reasons"),
   attentionList: document.getElementById("attention-list"),
@@ -53,6 +58,7 @@ const nodes = {
   registerRuntimeRole: document.getElementById("register-runtime-role"),
   registerFetchCapabilities: document.getElementById("register-fetch-capabilities"),
   registerFormClear: document.getElementById("register-form-clear"),
+  registerPreview: document.getElementById("register-preview"),
   registerResult: document.getElementById("register-result"),
 };
 
@@ -174,6 +180,38 @@ function renderAttentionReasons(summary) {
   `).join("");
 }
 
+function renderPersistence(capabilities) {
+  const persistence = capabilities.persistence || {
+    enabled: false,
+    statePath: "unknown",
+    backupStatePath: "unknown",
+    lastSavedAt: null,
+    isDirty: false,
+    lastSaveError: null,
+    restoredRuntimeCount: 0,
+    restoredSessionCount: 0,
+    restoredFromSavedAt: null,
+  };
+
+  renderMetricCards(nodes.persistenceCards, [
+    ["enabled", persistence.enabled ? "yes" : "no"],
+    ["state", persistence.isDirty ? "dirty" : "clean"],
+    ["state file", persistence.statePath ? "configured" : "missing"],
+    ["last saved", persistence.lastSavedAt || "never"],
+    ["restored runtimes", persistence.restoredRuntimeCount ?? 0],
+    ["restored sessions", persistence.restoredSessionCount ?? 0],
+  ]);
+
+  nodes.persistenceDetails.innerHTML = `
+    <div class="hint-line">state path: <strong>${escapeHtml(persistence.statePath || "unknown")}</strong></div>
+    <div class="hint-line">backup path: <strong>${escapeHtml(persistence.backupStatePath || "unknown")}</strong></div>
+    <div class="hint-line">state: <strong>${escapeHtml(persistence.isDirty ? "dirty" : "clean")}</strong></div>
+    <div class="hint-line">last saved at: <strong>${escapeHtml(persistence.lastSavedAt || "never")}</strong></div>
+    <div class="hint-line">last save error: <strong>${escapeHtml(persistence.lastSaveError || "none")}</strong></div>
+    <div class="hint-line">restored from save: <strong>${escapeHtml(persistence.restoredFromSavedAt || "none")}</strong></div>
+  `;
+}
+
 function renderAttentionList(payload) {
   const items = payload.runtimes || [];
   nodes.attentionCount.textContent = `${items.length} runtime${items.length === 1 ? "" : "s"}`;
@@ -233,8 +271,102 @@ function statusBadge(status) {
   return { text: `${status.snapshotKind || "observed"} snapshot`, tone: "good" };
 }
 
+function runtimeStatusHint(status) {
+  if (!status) {
+    return "unobserved";
+  }
+  if (status.statusSource === "fetch_failed") {
+    return "fetch_failed";
+  }
+  if (!status.hasLatestSnapshot) {
+    return "unobserved";
+  }
+  return "observed";
+}
+
+function findDuplicateRuntime(name, endpoint) {
+  const normalizedName = name.trim().toLowerCase();
+  const normalizedEndpoint = endpoint.trim().toLowerCase();
+  return state.latestRuntimes.find((runtime) =>
+    runtime.name.toLowerCase() === normalizedName ||
+    runtime.endpoint.toLowerCase() === normalizedEndpoint
+  ) || null;
+}
+
+function isLikelyHttpEndpoint(endpoint) {
+  if (!(endpoint.startsWith("http://") || endpoint.startsWith("https://"))) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(endpoint);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function suggestedRuntimeName(endpoint) {
+  try {
+    const parsed = new URL(endpoint);
+    const hostBits = parsed.hostname
+      .split(".")
+      .filter(Boolean)
+      .slice(0, 4)
+      .map((bit) => bit.replace(/[^a-zA-Z0-9-]/g, "-"))
+      .filter(Boolean);
+    const portBit = parsed.port ? `-${parsed.port}` : "";
+    const hostPart = hostBits.length ? hostBits.join("-").toLowerCase() : "runtime";
+    return `gw-${hostPart}${portBit}`;
+  } catch {
+    return "";
+  }
+}
+
+function maybePrefillRuntimeNameFromEndpoint() {
+  if (state.registerNameTouched) {
+    renderRegisterPreview();
+    return;
+  }
+
+  const endpoint = nodes.registerEndpoint.value.trim();
+  if (!isLikelyHttpEndpoint(endpoint)) {
+    renderRegisterPreview();
+    return;
+  }
+
+  const suggestion = suggestedRuntimeName(endpoint);
+  if (suggestion) {
+    nodes.registerName.value = suggestion;
+  }
+  renderRegisterPreview();
+}
+
+function renderRegisterPreview() {
+  const endpoint = nodes.registerEndpoint.value.trim();
+  const explicitName = nodes.registerName.value.trim();
+  const endpointValid = endpoint.length > 0 && isLikelyHttpEndpoint(endpoint);
+  const suggestedName = endpointValid ? suggestedRuntimeName(endpoint) : "";
+  const effectiveName = explicitName || suggestedName || "pending runtime name";
+  const endpointState = endpoint.length === 0 ? "pending" : endpointValid ? "valid" : "invalid";
+  const slice = [
+    nodes.registerRuntimeEnvironment.value.trim(),
+    nodes.registerRuntimeCluster.value.trim(),
+    nodes.registerRuntimeRole.value.trim(),
+  ].filter(Boolean).join(" / ") || "all runtimes";
+
+  nodes.registerPreview.innerHTML = `
+    <div><strong>Live Preview</strong></div>
+    <div class="hint-line">name: <strong>${escapeHtml(effectiveName)}</strong>${!explicitName && suggestedName ? ` <span class="tag-pill">suggested</span>` : ""}</div>
+    <div class="hint-line">slice: <strong>${escapeHtml(slice)}</strong></div>
+    <div class="hint-line">endpoint: <strong>${escapeHtml(endpointState)}</strong>${endpoint ? ` · ${escapeHtml(endpoint)}` : ""}</div>
+    <div class="hint-line">capability fetch: <strong>${nodes.registerFetchCapabilities.checked ? "enabled" : "disabled"}</strong></div>
+  `;
+}
+
 function renderRuntimes(payload, attentionMap) {
   const allItems = payload.runtimes || [];
+  state.latestRuntimes = allItems;
   const query = state.runtimeSearch.trim().toLowerCase();
   const filteredItems = query
     ? allItems.filter((runtime) =>
@@ -469,14 +601,17 @@ function syncFilterInputs() {
   nodes.runtimeSort.value = state.runtimeSort;
   const parts = [state.filter.environment, state.filter.cluster, state.filter.role].filter(Boolean);
   nodes.fleetFilterChip.textContent = parts.length ? parts.join(" / ") : "all runtimes";
+  renderRegisterPreview();
 }
 
 function clearRegisterForm() {
+  state.registerNameTouched = false;
   nodes.registerName.value = "";
   nodes.registerEndpoint.value = "";
   nodes.registerToken.value = "";
   syncRegisterFormTagsFromFilter();
   nodes.registerFetchCapabilities.checked = true;
+  renderRegisterPreview();
   nodes.registerResult.textContent = "No runtime submitted yet.";
 }
 
@@ -499,7 +634,8 @@ async function loadDashboard() {
   nodes.statusLine.textContent = "Loading control-plane state...";
 
   try {
-    const [fleetSummary, attentionSummary, attentionList, runtimes, sessions] = await Promise.all([
+    const [capabilities, fleetSummary, attentionSummary, attentionList, runtimes, sessions] = await Promise.all([
+      getJson(`/v1/capabilities`),
       getJson(`/v1/fleet/summary${query}`),
       getJson(`/v1/fleet/attention-summary${query}`),
       getJson(`/v1/fleet/runtimes-needing-attention${query}`),
@@ -515,6 +651,8 @@ async function loadDashboard() {
       ["sidecar context", fleetSummary.summary.runtimesWithExternalSidecarContext],
       ["diagnostic opinions", fleetSummary.summary.runtimesWithExternalDiagnosticOpinion],
     ]);
+
+    renderPersistence(capabilities);
 
     renderGroupCards(nodes.fleetSummaryGroups, {
       "snapshot kinds": fleetSummary.summary.snapshotKindCounts,
@@ -554,11 +692,43 @@ async function postAndReload(path, label) {
   }
 }
 
+async function savePersistenceNow() {
+  nodes.statusLine.textContent = "Saving control-plane state...";
+  try {
+    await postJson("/v1/persistence/save");
+    await loadDashboard();
+    nodes.statusLine.textContent = "Control-plane state saved.";
+  } catch (error) {
+    console.error(error);
+    nodes.statusLine.textContent = `Save now failed: ${error.message}`;
+  }
+}
+
 async function submitRegisterForm(event) {
   event.preventDefault();
+  const name = nodes.registerName.value.trim();
+  const endpoint = nodes.registerEndpoint.value.trim();
+  if (!isLikelyHttpEndpoint(endpoint)) {
+    nodes.registerResult.textContent = "Registration blocked: endpoint must start with http:// or https:// and be a valid URL.";
+    return;
+  }
+
+  const duplicate = findDuplicateRuntime(name, endpoint);
+  if (duplicate) {
+    const nameConflict = duplicate.name.toLowerCase() === name.toLowerCase();
+    const endpointConflict = duplicate.endpoint.toLowerCase() === endpoint.toLowerCase();
+    const conflictReason = nameConflict && endpointConflict
+      ? "name and endpoint"
+      : nameConflict
+        ? "name"
+        : "endpoint";
+    nodes.registerResult.textContent = `Registration blocked: ${conflictReason} already exists on ${duplicate.name} (${duplicate.endpoint}).`;
+    return;
+  }
+
   const body = {
-    name: nodes.registerName.value.trim(),
-    endpoint: nodes.registerEndpoint.value.trim(),
+    name,
+    endpoint,
     pairingToken: nodes.registerToken.value.trim(),
     capabilities: [],
     tags: {
@@ -572,13 +742,14 @@ async function submitRegisterForm(event) {
   nodes.registerResult.textContent = "Registering runtime...";
   try {
     const result = await postJsonBody("/v1/runtimes/register", body);
+    state.registerNameTouched = false;
     state.selectedRuntimeId = result.runtimeId;
-    nodes.registerResult.textContent = `Registered ${result.name} (${result.runtimeId}) into ${currentSliceLabel()}.`;
+    nodes.registerResult.textContent = `Registered ${result.name} (${result.runtimeId}) into ${currentSliceLabel()} with status ${runtimeStatusHint(result.status)}.`;
     await loadDashboard();
     nodes.runtimeDetailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
     console.error(error);
-    nodes.registerResult.textContent = `Registration failed: ${error.message}`;
+    nodes.registerResult.textContent = `Registration failed: ${error.message}. If this runtime already exists, try selecting it from the table instead of registering again.`;
   }
 }
 
@@ -611,10 +782,20 @@ nodes.runtimeSort.addEventListener("change", () => {
 nodes.refreshAllButton.addEventListener("click", () => postAndReload("/v1/fleet/refresh-all", "Fleet refresh-all"));
 nodes.refreshStatusButton.addEventListener("click", () => postAndReload("/v1/fleet/refresh-status", "Fleet status refresh"));
 nodes.refreshCapabilitiesButton.addEventListener("click", () => postAndReload("/v1/fleet/refresh-capabilities", "Fleet capability refresh"));
+nodes.persistenceSaveNow.addEventListener("click", savePersistenceNow);
 nodes.runtimeDetailRefreshAll.addEventListener("click", () => refreshSelectedRuntime("all"));
 nodes.runtimeDetailRefreshStatus.addEventListener("click", () => refreshSelectedRuntime("status"));
 nodes.runtimeDetailRefreshCapabilities.addEventListener("click", () => refreshSelectedRuntime("capabilities"));
 nodes.runtimeDetailCopyLink.addEventListener("click", copySelectedRuntimeLink);
+nodes.registerName.addEventListener("input", () => {
+  state.registerNameTouched = nodes.registerName.value.trim().length > 0;
+  renderRegisterPreview();
+});
+nodes.registerEndpoint.addEventListener("input", maybePrefillRuntimeNameFromEndpoint);
+nodes.registerRuntimeEnvironment.addEventListener("input", renderRegisterPreview);
+nodes.registerRuntimeCluster.addEventListener("input", renderRegisterPreview);
+nodes.registerRuntimeRole.addEventListener("input", renderRegisterPreview);
+nodes.registerFetchCapabilities.addEventListener("change", renderRegisterPreview);
 nodes.registerForm.addEventListener("submit", submitRegisterForm);
 nodes.registerFormClear.addEventListener("click", clearRegisterForm);
 

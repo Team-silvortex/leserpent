@@ -6,6 +6,20 @@ public sealed class RegistryService
 {
     private readonly ConcurrentDictionary<string, RuntimeRecord> runtimes = new();
     private readonly ConcurrentDictionary<string, SessionRecord> sessions = new();
+    private readonly ControlPlaneStateStore stateStore;
+    private readonly DateTimeOffset? restoredFromSavedAt;
+
+    public int RestoredRuntimeCount { get; }
+    public int RestoredSessionCount { get; }
+    public DateTimeOffset? RestoredFromSavedAt => restoredFromSavedAt;
+
+    public RegistryService(ControlPlaneStateStore stateStore)
+    {
+        this.stateStore = stateStore;
+        var loaded = stateStore.Load();
+        restoredFromSavedAt = loaded?.SavedAt;
+        (RestoredRuntimeCount, RestoredSessionCount) = RestorePersistedState(loaded);
+    }
 
     public RuntimeRegistrationResponse RegisterRuntime(RuntimeRegistrationRequest request)
     {
@@ -148,6 +162,12 @@ public sealed class RegistryService
             reasonCounts);
     }
 
+    public DateTimeOffset SaveNow()
+    {
+        PersistState();
+        return stateStore.LastSavedAt ?? DateTimeOffset.UtcNow;
+    }
+
     public RuntimeCapabilityRefreshResponse? RefreshRuntimeCapabilities(string runtimeId, CapabilityDiscoveryResult discovery)
     {
         if (!runtimes.TryGetValue(runtimeId, out var runtime))
@@ -166,6 +186,7 @@ public sealed class RegistryService
             UpdatedAt = DateTimeOffset.UtcNow,
         };
         runtimes[runtimeId] = updated;
+        PersistState();
         return new RuntimeCapabilityRefreshResponse(
             updated.RuntimeId,
             updated.Name,
@@ -189,6 +210,7 @@ public sealed class RegistryService
             UpdatedAt = DateTimeOffset.UtcNow,
         };
         runtimes[runtimeId] = updated;
+        PersistState();
         return new RuntimeStatusRefreshResponse(
             updated.RuntimeId,
             updated.Name,
@@ -222,6 +244,7 @@ public sealed class RegistryService
             now,
             normalizedRequirements);
         sessions[created.SessionId] = created;
+        PersistState();
         return (created.ToSummary(), Array.Empty<CapabilityRejection>(), null);
     }
 
@@ -247,6 +270,7 @@ public sealed class RegistryService
             UpdatedAt = DateTimeOffset.UtcNow,
         };
         sessions[sessionId] = updated;
+        PersistState();
         return updated.ToSummary();
     }
 
@@ -278,6 +302,7 @@ public sealed class RegistryService
                 UpdatedAt = now,
             };
             runtimes[existing.RuntimeId] = updated;
+            PersistState();
             return updated.ToRegistrationResponse();
         }
 
@@ -295,8 +320,66 @@ public sealed class RegistryService
             tags,
             status);
         runtimes[created.RuntimeId] = created;
+        PersistState();
         return created.ToRegistrationResponse();
     }
+
+    private (int RuntimeCount, int SessionCount) RestorePersistedState(PersistedControlPlaneState? state)
+    {
+        if (state is null)
+        {
+            return (0, 0);
+        }
+
+        var restoredRuntimeCount = 0;
+        foreach (var runtime in state.Runtimes)
+        {
+            var restored = new RuntimeRecord(
+                runtime.RuntimeId,
+                runtime.Name.Trim(),
+                runtime.Endpoint.Trim(),
+                runtime.PairingToken.Trim(),
+                runtime.RegisteredAt,
+                runtime.UpdatedAt,
+                NormalizeCapabilities(runtime.Capabilities),
+                string.IsNullOrWhiteSpace(runtime.CapabilitySource) ? "manual" : runtime.CapabilitySource.Trim(),
+                runtime.CapabilityFetchedAt,
+                runtime.CapabilityFetchError,
+                NormalizeTags(runtime.Tags),
+                runtime.Status);
+            runtimes[restored.RuntimeId] = restored;
+            restoredRuntimeCount += 1;
+        }
+
+        var restoredSessionCount = 0;
+        foreach (var session in state.Sessions)
+        {
+            var restored = new SessionRecord(
+                session.SessionId,
+                session.RuntimeId.Trim(),
+                session.PipelineKind.Trim(),
+                session.RequestedBy.Trim(),
+                session.Status.Trim(),
+                session.CreatedAt,
+                session.UpdatedAt,
+                NormalizeRequirements(session.Requirements));
+            sessions[restored.SessionId] = restored;
+            restoredSessionCount += 1;
+        }
+
+        return (restoredRuntimeCount, restoredSessionCount);
+    }
+
+    private void PersistState() =>
+        stateStore.Save(
+            runtimes.Values
+                .OrderBy(runtime => runtime.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(runtime => runtime.ToPersistedState())
+                .ToArray(),
+            sessions.Values
+                .OrderByDescending(session => session.CreatedAt)
+                .Select(session => session.ToPersistedState())
+                .ToArray());
 
     private static IReadOnlyList<RuntimeCapability> NormalizeCapabilities(
         IReadOnlyList<RuntimeCapability> capabilities) =>
@@ -482,6 +565,9 @@ public sealed class RegistryService
 
         public RuntimeSummary ToSummary() =>
             new(RuntimeId, Name, Endpoint, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status);
+
+        public PersistedRuntimeState ToPersistedState() =>
+            new(RuntimeId, Name, Endpoint, PairingToken, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status);
     }
 
     private sealed record SessionRecord(
@@ -495,6 +581,9 @@ public sealed class RegistryService
         IReadOnlyList<SessionCapabilityRequirement> Requirements)
     {
         public SessionSummary ToSummary() =>
+            new(SessionId, RuntimeId, PipelineKind, RequestedBy, Status, CreatedAt, UpdatedAt, Requirements);
+
+        public PersistedSessionState ToPersistedState() =>
             new(SessionId, RuntimeId, PipelineKind, RequestedBy, Status, CreatedAt, UpdatedAt, Requirements);
     }
 }

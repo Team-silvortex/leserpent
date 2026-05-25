@@ -105,7 +105,20 @@ public sealed record ServiceCapabilities(
     string Service,
     string Version,
     string Role,
-    IReadOnlyList<string> Routes
+    IReadOnlyList<string> Routes,
+    ServicePersistenceCapabilities? Persistence = null
+);
+
+public sealed record ServicePersistenceCapabilities(
+    string StatePath,
+    string BackupStatePath,
+    DateTimeOffset? LastSavedAt,
+    bool Enabled,
+    bool IsDirty,
+    string? LastSaveError = null,
+    int RestoredRuntimeCount = 0,
+    int RestoredSessionCount = 0,
+    DateTimeOffset? RestoredFromSavedAt = null
 );
 
 public sealed record RuntimeCapabilityRefreshResponse(
@@ -213,4 +226,37 @@ public sealed record FleetRefreshAllItem(
 public sealed record FleetRefreshAllResponse(
     int RefreshedCount,
     IReadOnlyList<FleetRefreshAllItem> Runtimes
+);
+
+public sealed record PersistedRuntimeState(
+    string RuntimeId,
+    string Name,
+    string Endpoint,
+    string PairingToken,
+    DateTimeOffset RegisteredAt,
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<RuntimeCapability> Capabilities,
+    string CapabilitySource,
+    DateTimeOffset? CapabilityFetchedAt,
+    string? CapabilityFetchError,
+    RuntimeTags Tags,
+    RuntimeStatusSnapshot Status
+);
+
+public sealed record PersistedSessionState(
+    string SessionId,
+    string RuntimeId,
+    string PipelineKind,
+    string RequestedBy,
+    string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<SessionCapabilityRequirement> Requirements
+);
+
+public sealed record PersistedControlPlaneState(
+    int SchemaVersion,
+    DateTimeOffset SavedAt,
+    IReadOnlyList<PersistedRuntimeState> Runtimes,
+    IReadOnlyList<PersistedSessionState> Sessions
 );
