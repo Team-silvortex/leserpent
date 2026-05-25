@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Leserpent.ControlPlane;
 
 namespace Leserpent;
@@ -37,6 +38,7 @@ public class Program
                 statePath = stateStore.StatePath,
                 backupStatePath = stateStore.BackupStatePath,
                 lastSavedAt = stateStore.LastSavedAt,
+                schemaVersion = stateStore.SchemaVersion,
                 isDirty = stateStore.IsDirty,
                 lastSaveError = stateStore.LastSaveError,
                 restoredRuntimeCount = registry.RestoredRuntimeCount,
@@ -54,6 +56,8 @@ public class Program
                 {
                     "/health",
                     "/v1/capabilities",
+                    "/v1/persistence/export",
+                    "/v1/persistence/import",
                     "/v1/persistence/save",
                     "/v1/fleet/summary",
                     "/v1/fleet/attention-summary",
@@ -77,6 +81,7 @@ public class Program
                     stateStore.BackupStatePath,
                     stateStore.LastSavedAt,
                     true,
+                    stateStore.SchemaVersion,
                     stateStore.IsDirty,
                     stateStore.LastSaveError,
                     registry.RestoredRuntimeCount,
@@ -84,11 +89,53 @@ public class Program
                     registry.RestoredFromSavedAt))));
 
         app.MapPost("/v1/persistence/save", (RegistryService registry) =>
-            Results.Ok(new
+            Results.Ok(new PersistenceSaveResponse(true, registry.SaveNow())));
+
+        app.MapGet("/v1/persistence/export", (RegistryService registry) =>
+        {
+            var state = registry.ExportState();
+            return ResultExtensions.FileDownloadJson(
+                state,
+                $"leserpent-control-plane-state-{state.SavedAt:yyyyMMddHHmmss}.json");
+        });
+
+        app.MapPost("/v1/persistence/import", async (HttpRequest request, RegistryService registry, ControlPlaneStateStore stateStore, CancellationToken cancellationToken) =>
+        {
+            PersistedControlPlaneState? imported;
+            try
             {
-                ok = true,
-                savedAt = registry.SaveNow(),
-            }));
+                imported = await request.ReadFromJsonAsync<PersistedControlPlaneState>(cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "invalid_persistence_import",
+                    reason = ex.Message,
+                });
+            }
+
+            if (imported is null)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "invalid_persistence_import",
+                    reason = "request body did not contain a control-plane state document",
+                });
+            }
+
+            if (!stateStore.IsCompatible(imported))
+            {
+                return Results.BadRequest(new
+                {
+                    error = "incompatible_persistence_import",
+                    schemaVersion = imported.SchemaVersion,
+                    expectedSchemaVersion = stateStore.SchemaVersion,
+                });
+            }
+
+            return Results.Ok(registry.ImportState(imported));
+        });
 
         app.MapGet("/v1/fleet/summary", (string? environment, string? cluster, string? role, RegistryService registry) =>
             Results.Ok(new
@@ -351,4 +398,18 @@ public class Program
 
         app.Run();
     }
+}
+
+internal static class ResultExtensions
+{
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        WriteIndented = true,
+    };
+
+    public static IResult FileDownloadJson<T>(T payload, string fileName) =>
+        Results.File(
+            JsonSerializer.SerializeToUtf8Bytes(payload, SerializerOptions),
+            "application/json",
+            fileName);
 }

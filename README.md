@@ -189,6 +189,9 @@ runtime：
 - `POST /v1/runtimes/register`
 - `POST /v1/runtimes/{id}/refresh-capabilities`
 - `POST /v1/runtimes/{id}/refresh-status`
+- `GET /v1/persistence/export`
+- `POST /v1/persistence/import`
+- `POST /v1/persistence/save`
 - `GET /v1/sessions`
 - `GET /v1/sessions/{id}`
 - `POST /v1/sessions`
@@ -228,6 +231,7 @@ runtime：
   - `persistence.statePath`
   - `persistence.backupStatePath`
   - `persistence.lastSavedAt`
+  - `persistence.schemaVersion`
   - `persistence.isDirty`
   - `persistence.lastSaveError`
   - `persistence.restoredRuntimeCount`
@@ -238,11 +242,17 @@ runtime：
   - `persistence.statePath`
   - `persistence.backupStatePath`
   - `persistence.lastSavedAt`
+  - `persistence.schemaVersion`
   - `persistence.isDirty`
   - `persistence.lastSaveError`
   - `persistence.restoredRuntimeCount`
   - `persistence.restoredSessionCount`
   - `persistence.restoredFromSavedAt`
+- `GET /v1/persistence/export`
+  - downloads the current control-plane state as JSON
+- `POST /v1/persistence/import`
+  - imports a compatible control-plane state JSON document
+  - immediately persists the imported state and refreshes the in-memory registry
 - `POST /v1/persistence/save`
   - very-light manual flush of current control-plane state
 
@@ -421,12 +431,18 @@ dotnet run
 
 当前 dashboard 已经支持：
 
+- tab-shell single-page layout
+- bilingual UI (`English` / `简体中文`)
+- auto-follow browser language with manual override
 - very-light runtime registration
 - fleet summary / attention summary
 - runtime list / attention list
+- per-runtime child panel with embedded gewyvern views
+- child-panel view state persisted in URL
 - fleet refresh actions
 - single-runtime detail inspection
 - single-runtime refresh actions
+- persistence export / import / save controls
 
 ### 当前 runtime discovery 语义
 

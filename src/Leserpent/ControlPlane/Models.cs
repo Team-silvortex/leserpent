@@ -114,11 +114,25 @@ public sealed record ServicePersistenceCapabilities(
     string BackupStatePath,
     DateTimeOffset? LastSavedAt,
     bool Enabled,
+    int SchemaVersion,
     bool IsDirty,
     string? LastSaveError = null,
     int RestoredRuntimeCount = 0,
     int RestoredSessionCount = 0,
     DateTimeOffset? RestoredFromSavedAt = null
+);
+
+public sealed record PersistenceSaveResponse(
+    bool Ok,
+    DateTimeOffset SavedAt
+);
+
+public sealed record PersistenceImportResponse(
+    bool Ok,
+    int ImportedRuntimeCount,
+    int ImportedSessionCount,
+    DateTimeOffset SavedAt,
+    DateTimeOffset? ImportedFromSavedAt
 );
 
 public sealed record RuntimeCapabilityRefreshResponse(

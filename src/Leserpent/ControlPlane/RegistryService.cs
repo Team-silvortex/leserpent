@@ -168,6 +168,37 @@ public sealed class RegistryService
         return stateStore.LastSavedAt ?? DateTimeOffset.UtcNow;
     }
 
+    public PersistedControlPlaneState ExportState() =>
+        stateStore.CreateState(
+            runtimes.Values
+                .OrderBy(runtime => runtime.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(runtime => runtime.ToPersistedState())
+                .ToArray(),
+            sessions.Values
+                .OrderByDescending(session => session.CreatedAt)
+                .Select(session => session.ToPersistedState())
+                .ToArray());
+
+    public PersistenceImportResponse ImportState(PersistedControlPlaneState state)
+    {
+        if (!stateStore.IsCompatible(state))
+        {
+            throw new InvalidOperationException(
+                $"imported state schema {state.SchemaVersion} is not compatible with schema {stateStore.SchemaVersion}");
+        }
+
+        runtimes.Clear();
+        sessions.Clear();
+        var (runtimeCount, sessionCount) = RestorePersistedState(state);
+        PersistState();
+        return new PersistenceImportResponse(
+            true,
+            runtimeCount,
+            sessionCount,
+            stateStore.LastSavedAt ?? DateTimeOffset.UtcNow,
+            state.SavedAt);
+    }
+
     public RuntimeCapabilityRefreshResponse? RefreshRuntimeCapabilities(string runtimeId, CapabilityDiscoveryResult discovery)
     {
         if (!runtimes.TryGetValue(runtimeId, out var runtime))
@@ -370,16 +401,11 @@ public sealed class RegistryService
         return (restoredRuntimeCount, restoredSessionCount);
     }
 
-    private void PersistState() =>
-        stateStore.Save(
-            runtimes.Values
-                .OrderBy(runtime => runtime.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(runtime => runtime.ToPersistedState())
-                .ToArray(),
-            sessions.Values
-                .OrderByDescending(session => session.CreatedAt)
-                .Select(session => session.ToPersistedState())
-                .ToArray());
+    private void PersistState()
+    {
+        var state = ExportState();
+        stateStore.Save(state.Runtimes, state.Sessions);
+    }
 
     private static IReadOnlyList<RuntimeCapability> NormalizeCapabilities(
         IReadOnlyList<RuntimeCapability> capabilities) =>

@@ -24,6 +24,7 @@ public sealed class ControlPlaneStateStore
 
     public string StatePath => statePath;
     public string BackupStatePath => backupStatePath;
+    public int SchemaVersion => CurrentSchemaVersion;
 
     public DateTimeOffset? LastSavedAt { get; private set; }
     public bool IsDirty { get; private set; }
@@ -76,14 +77,22 @@ public sealed class ControlPlaneStateStore
         }
     }
 
-    public void Save(IReadOnlyList<PersistedRuntimeState> runtimes, IReadOnlyList<PersistedSessionState> sessions)
-    {
-        IsDirty = true;
-        var state = new PersistedControlPlaneState(
+    public PersistedControlPlaneState CreateState(
+        IReadOnlyList<PersistedRuntimeState> runtimes,
+        IReadOnlyList<PersistedSessionState> sessions) =>
+        new(
             CurrentSchemaVersion,
             DateTimeOffset.UtcNow,
             runtimes,
             sessions);
+
+    public bool IsCompatible(PersistedControlPlaneState? state) =>
+        state is not null && state.SchemaVersion == CurrentSchemaVersion;
+
+    public void Save(IReadOnlyList<PersistedRuntimeState> runtimes, IReadOnlyList<PersistedSessionState> sessions)
+    {
+        IsDirty = true;
+        var state = CreateState(runtimes, sessions);
 
         try
         {

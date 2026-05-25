@@ -11,198 +11,291 @@
     <header class="hero">
       <div>
         <p class="eyebrow">leserpent</p>
-        <h1>Control Plane Dashboard</h1>
-        <p class="subcopy">A very-light fleet view for many nearby gewyvern runtimes.</p>
+        <h1 data-i18n="hero.title">Control Plane Dashboard</h1>
+        <p class="subcopy" data-i18n="hero.subcopy">A very-light fleet view for many nearby gewyvern runtimes.</p>
       </div>
-      <div class="hero-actions">
-        <button id="refresh-all" class="primary">Fleet Refresh All</button>
-        <button id="refresh-status">Refresh Status</button>
-        <button id="refresh-capabilities">Refresh Capabilities</button>
+      <div class="hero-stack">
+        <div class="hero-actions">
+          <button id="refresh-all" class="primary" data-i18n="actions.refreshAll">Fleet Refresh All</button>
+          <button id="refresh-status" data-i18n="actions.refreshStatus">Refresh Status</button>
+          <button id="refresh-capabilities" data-i18n="actions.refreshCapabilities">Refresh Capabilities</button>
+        </div>
+        <div class="toolbar-row">
+          <label class="language-picker">
+            <span data-i18n="language.label">Language</span>
+            <select id="language-select">
+              <option value="auto">Auto</option>
+              <option value="en">English</option>
+              <option value="zh-CN">简体中文</option>
+            </select>
+          </label>
+        </div>
       </div>
     </header>
 
     <section class="filters card">
       <div class="filter-grid">
         <label>
-          <span>Environment</span>
-          <input id="filter-environment" type="text" placeholder="prod" />
+          <span data-i18n="filters.environment">Environment</span>
+          <input id="filter-environment" type="text" placeholder="prod" data-i18n-placeholder="filters.environmentPlaceholder" />
         </label>
         <label>
-          <span>Cluster</span>
-          <input id="filter-cluster" type="text" placeholder="alpha" />
+          <span data-i18n="filters.cluster">Cluster</span>
+          <input id="filter-cluster" type="text" placeholder="alpha" data-i18n-placeholder="filters.clusterPlaceholder" />
         </label>
         <label>
-          <span>Role</span>
-          <input id="filter-role" type="text" placeholder="edge" />
+          <span data-i18n="filters.role">Role</span>
+          <input id="filter-role" type="text" placeholder="edge" data-i18n-placeholder="filters.rolePlaceholder" />
         </label>
       </div>
       <div class="filter-actions">
-        <button id="apply-filters">Apply Filters</button>
-        <button id="clear-filters" class="quiet">Clear</button>
+        <button id="apply-filters" data-i18n="filters.apply">Apply Filters</button>
+        <button id="clear-filters" class="quiet" data-i18n="filters.clear">Clear</button>
       </div>
     </section>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>Register Runtime</h2>
-        <span class="chip">very-light intake</span>
-      </div>
-      <form id="register-form" class="register-grid">
-        <label>
-          <span>Name</span>
-          <input id="register-name" type="text" placeholder="gw-prod-edge-01" required />
-        </label>
-        <label>
-          <span>Endpoint</span>
-          <input id="register-endpoint" type="text" placeholder="http://127.0.0.1:9910" required />
-        </label>
-        <label>
-          <span>Pairing Token</span>
-          <input id="register-token" type="text" placeholder="token-123" required />
-        </label>
-        <label>
-          <span>Environment</span>
-          <input id="register-runtime-environment" type="text" placeholder="prod" />
-        </label>
-        <label>
-          <span>Cluster</span>
-          <input id="register-runtime-cluster" type="text" placeholder="alpha" />
-        </label>
-        <label>
-          <span>Role</span>
-          <input id="register-runtime-role" type="text" placeholder="edge" />
-        </label>
-        <label class="checkbox-row">
-          <input id="register-fetch-capabilities" type="checkbox" checked />
-          <span>Fetch capability and latest-meta from gewyvern</span>
-        </label>
-        <div class="register-actions">
-          <button type="submit" class="primary">Register Runtime</button>
-          <button id="register-form-clear" type="button" class="quiet">Clear Form</button>
-        </div>
-      </form>
-      <div id="register-preview" class="register-preview"></div>
-      <div id="register-result" class="form-result">No runtime submitted yet.</div>
-    </section>
+    <nav class="tab-shell card" aria-label="dashboard sections">
+      <button class="tab-button active" data-tab="overview">
+        <span class="tab-icon" aria-hidden="true">◎</span>
+        <span data-i18n="tabs.overview">Overview</span>
+      </button>
+      <button class="tab-button" data-tab="runtimes">
+        <span class="tab-icon" aria-hidden="true">▣</span>
+        <span data-i18n="tabs.runtimes">Runtimes</span>
+      </button>
+      <button class="tab-button" data-tab="register">
+        <span class="tab-icon" aria-hidden="true">＋</span>
+        <span data-i18n="tabs.register">Register</span>
+      </button>
+      <button class="tab-button" data-tab="persistence">
+        <span class="tab-icon" aria-hidden="true">◈</span>
+        <span data-i18n="tabs.persistence">Persistence</span>
+      </button>
+      <button class="tab-button" data-tab="sessions">
+        <span class="tab-icon" aria-hidden="true">≋</span>
+        <span data-i18n="tabs.sessions">Sessions</span>
+      </button>
+    </nav>
 
-    <section class="grid two-up">
-      <article class="card">
-        <div class="card-head">
-          <h2>Fleet Summary</h2>
-          <span id="fleet-filter-chip" class="chip">all runtimes</span>
-        </div>
-        <div id="fleet-summary-cards" class="metric-grid"></div>
-        <div id="fleet-summary-groups" class="group-grid"></div>
-      </article>
+    <main class="tab-panels">
+      <section class="tab-panel active" data-tab-panel="overview">
+        <article class="overview-spotlight card">
+          <div class="overview-spotlight-copy">
+            <p class="overview-kicker" data-i18n="overview.kicker">Fleet posture</p>
+            <h2 data-i18n="overview.spotlightTitle">Stay oriented before you drill into individual runtimes.</h2>
+            <p data-i18n="overview.spotlightBody">Use this shell to move between fleet posture, runtime detail, intake, persistence, and sessions without falling into one long scrolling page.</p>
+          </div>
+          <div class="overview-spotlight-rail">
+            <div class="overview-stat">
+              <span class="overview-stat-label" data-i18n="overview.spotlightRail1">fleet slice</span>
+              <strong id="fleet-filter-chip" class="overview-stat-value">all runtimes</strong>
+            </div>
+            <div class="overview-stat">
+              <span class="overview-stat-label" data-i18n="overview.spotlightRail2">current mode</span>
+              <strong class="overview-stat-value" data-i18n="overview.triage">triage</strong>
+            </div>
+          </div>
+        </article>
 
-      <article class="card">
-        <div class="card-head">
-          <h2>Attention Summary</h2>
-          <span class="chip attention">triage</span>
-        </div>
-        <div id="attention-summary-cards" class="metric-grid"></div>
-        <div id="attention-reasons" class="stack"></div>
-      </article>
-    </section>
+        <div class="grid two-up">
+          <article class="card">
+            <div class="card-head">
+              <h2 data-i18n="overview.fleetSummary">Fleet Summary</h2>
+              <span class="chip spotlight-chip" data-i18n="overview.summaryChip">live counts</span>
+            </div>
+            <div id="fleet-summary-cards" class="metric-grid"></div>
+            <div id="fleet-summary-groups" class="group-grid"></div>
+          </article>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>Persistence</h2>
-        <span class="chip">control-plane state</span>
-      </div>
-      <div class="detail-actions">
-        <button id="persistence-save-now" type="button">Save Now</button>
-      </div>
-      <div id="persistence-cards" class="metric-grid"></div>
-      <div id="persistence-details" class="stack"></div>
-    </section>
+          <article class="card">
+            <div class="card-head">
+              <h2 data-i18n="overview.attentionSummary">Attention Summary</h2>
+              <span class="chip attention" data-i18n="overview.triage">triage</span>
+            </div>
+            <div id="attention-summary-cards" class="metric-grid"></div>
+            <div id="attention-reasons" class="stack"></div>
+          </article>
+        </div>
 
-    <section class="grid two-up">
-      <article class="card">
-        <div class="card-head">
-          <h2>Runtimes Needing Attention</h2>
-          <span id="attention-count" class="chip">0 runtimes</span>
-        </div>
-        <div id="attention-list" class="list-stack"></div>
-      </article>
+        <article class="card">
+          <div class="card-head">
+            <h2 data-i18n="overview.runtimesNeedingAttention">Runtimes Needing Attention</h2>
+            <span id="attention-count" class="chip">0 runtimes</span>
+          </div>
+          <div id="attention-list" class="list-stack"></div>
+        </article>
+      </section>
 
-      <article class="card">
-        <div class="card-head">
-          <h2>Sessions</h2>
-          <span id="session-count" class="chip">0 sessions</span>
-        </div>
-        <div id="session-list" class="list-stack"></div>
-      </article>
-    </section>
+      <section class="tab-panel" data-tab-panel="runtimes">
+        <div class="runtime-workspace">
+          <section class="card runtime-list-card">
+            <div class="card-head">
+              <h2 data-i18n="runtimes.title">Runtimes</h2>
+              <span id="runtime-count" class="chip">0 runtimes</span>
+            </div>
+            <div class="runtime-toolbar">
+              <label class="search-box">
+                <span data-i18n="runtimes.quickSearch">Quick Search</span>
+                <input id="runtime-search" type="text" placeholder="name or endpoint" data-i18n-placeholder="runtimes.quickSearchPlaceholder" />
+              </label>
+              <label class="search-box">
+                <span data-i18n="runtimes.sortBy">Sort By</span>
+                <select id="runtime-sort">
+                  <option value="name" data-i18n="runtimes.sort.name">Name</option>
+                  <option value="status" data-i18n="runtimes.sort.status">Status Source</option>
+                  <option value="snapshot" data-i18n="runtimes.sort.snapshot">Snapshot Kind</option>
+                </select>
+              </label>
+            </div>
+            <div class="table-wrap runtime-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="runtimes.columns.name">Name</th>
+                    <th data-i18n="runtimes.columns.tags">Tags</th>
+                    <th data-i18n="runtimes.columns.status">Status</th>
+                    <th data-i18n="runtimes.columns.capabilitySurface">Capability Surface</th>
+                    <th data-i18n="runtimes.columns.sidecar">Sidecar</th>
+                    <th data-i18n="runtimes.columns.attention">Attention</th>
+                    <th data-i18n="runtimes.columns.actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="runtime-table-body"></tbody>
+              </table>
+            </div>
+          </section>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>Runtimes</h2>
-        <span id="runtime-count" class="chip">0 runtimes</span>
-      </div>
-      <div class="runtime-toolbar">
-        <label class="search-box">
-          <span>Quick Search</span>
-          <input id="runtime-search" type="text" placeholder="name or endpoint" />
-        </label>
-        <label class="search-box">
-          <span>Sort By</span>
-          <select id="runtime-sort">
-            <option value="name">Name</option>
-            <option value="status">Status Source</option>
-            <option value="snapshot">Snapshot Kind</option>
-          </select>
-        </label>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Tags</th>
-              <th>Status</th>
-              <th>Capability Surface</th>
-              <th>Sidecar</th>
-              <th>Attention</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="runtime-table-body"></tbody>
-        </table>
-      </div>
-    </section>
+          <div class="runtime-sidepanel">
+            <section class="card">
+              <div class="card-head">
+                <h2 data-i18n="runtimeDetail.title">Runtime Detail</h2>
+                <span id="runtime-detail-chip" class="chip">nothing selected</span>
+              </div>
+              <div id="runtime-detail-actions" class="detail-actions hidden">
+                <button id="runtime-detail-refresh-all" class="primary" type="button" data-i18n="runtimeDetail.refreshAll">Refresh This Runtime</button>
+                <button id="runtime-detail-refresh-status" type="button" data-i18n="runtimeDetail.refreshStatus">Refresh Status</button>
+                <button id="runtime-detail-refresh-capabilities" type="button" data-i18n="runtimeDetail.refreshCapabilities">Refresh Capabilities</button>
+                <button id="runtime-detail-copy-link" type="button" data-i18n="runtimeDetail.copyLink">Copy Runtime Link</button>
+              </div>
+              <div id="runtime-detail-empty" class="form-result" data-i18n="runtimeDetail.empty">Select a runtime from the table to inspect its capability, status, and attention state.</div>
+              <div id="runtime-detail-panel" class="detail-grid hidden">
+                <div class="group-card">
+                  <div class="group-title" data-i18n="runtimeDetail.identity">Identity</div>
+                  <div id="runtime-detail-identity" class="stack"></div>
+                </div>
+                <div class="group-card">
+                  <div class="group-title" data-i18n="runtimeDetail.status">Status</div>
+                  <div id="runtime-detail-status" class="stack"></div>
+                </div>
+                <div class="group-card">
+                  <div class="group-title" data-i18n="runtimeDetail.capabilities">Capabilities</div>
+                  <div id="runtime-detail-capabilities" class="group-list"></div>
+                </div>
+                <div class="group-card">
+                  <div class="group-title" data-i18n="runtimeDetail.attention">Attention</div>
+                  <div id="runtime-detail-attention" class="stack"></div>
+                </div>
+              </div>
+            </section>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>Runtime Detail</h2>
-        <span id="runtime-detail-chip" class="chip">nothing selected</span>
-      </div>
-      <div id="runtime-detail-actions" class="detail-actions hidden">
-        <button id="runtime-detail-refresh-all" class="primary" type="button">Refresh This Runtime</button>
-        <button id="runtime-detail-refresh-status" type="button">Refresh Status</button>
-        <button id="runtime-detail-refresh-capabilities" type="button">Refresh Capabilities</button>
-        <button id="runtime-detail-copy-link" type="button">Copy Runtime Link</button>
-      </div>
-      <div id="runtime-detail-empty" class="form-result">Select a runtime from the table to inspect its capability, status, and attention state.</div>
-      <div id="runtime-detail-panel" class="detail-grid hidden">
-        <div class="group-card">
-          <div class="group-title">Identity</div>
-          <div id="runtime-detail-identity" class="stack"></div>
+            <section class="card runtime-child-panel">
+              <div class="card-head">
+                <h2 data-i18n="runtimePanel.title">Runtime Child Panel</h2>
+                <span id="runtime-panel-chip" class="chip" data-i18n="runtimePanel.notReady">no runtime selected</span>
+              </div>
+              <div id="runtime-panel-breadcrumb" class="runtime-panel-breadcrumb hidden"></div>
+              <div id="runtime-panel-trust" class="runtime-panel-trust hidden"></div>
+              <div id="runtime-panel-actions" class="detail-actions hidden">
+                <button type="button" class="runtime-panel-tab is-active" data-runtime-panel-view="root" data-i18n="runtimePanel.views.root">Home</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="health" data-i18n="runtimePanel.views.health">Health</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="meta" data-i18n="runtimePanel.views.meta">Latest Meta</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="summary" data-i18n="runtimePanel.views.summary">Summary</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="analysis" data-i18n="runtimePanel.views.analysis">Analysis</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="targets" data-i18n="runtimePanel.views.targets">Targets</button>
+                <button type="button" id="runtime-panel-open-external" data-i18n="runtimePanel.openExternal">Open in New Tab</button>
+              </div>
+              <div id="runtime-panel-empty" class="form-result" data-i18n="runtimePanel.empty">Select a runtime to load its child control panel.</div>
+              <div id="runtime-panel-frame-wrap" class="runtime-frame-wrap hidden">
+                <div id="runtime-panel-url" class="runtime-frame-url"></div>
+                <iframe id="runtime-panel-frame" title="gewyvern child panel" loading="lazy" referrerpolicy="no-referrer"></iframe>
+              </div>
+            </section>
+          </div>
         </div>
-        <div class="group-card">
-          <div class="group-title">Status</div>
-          <div id="runtime-detail-status" class="stack"></div>
-        </div>
-        <div class="group-card">
-          <div class="group-title">Capabilities</div>
-          <div id="runtime-detail-capabilities" class="group-list"></div>
-        </div>
-        <div class="group-card">
-          <div class="group-title">Attention</div>
-          <div id="runtime-detail-attention" class="stack"></div>
-        </div>
-      </div>
-    </section>
+      </section>
+
+      <section class="tab-panel" data-tab-panel="register">
+        <section class="card">
+          <div class="card-head">
+            <h2 data-i18n="register.title">Register Runtime</h2>
+            <span class="chip" data-i18n="register.intake">very-light intake</span>
+          </div>
+          <form id="register-form" class="register-grid">
+            <label>
+              <span data-i18n="register.name">Name</span>
+              <input id="register-name" type="text" placeholder="gw-prod-edge-01" data-i18n-placeholder="register.namePlaceholder" required />
+            </label>
+            <label>
+              <span data-i18n="register.endpoint">Endpoint</span>
+              <input id="register-endpoint" type="text" placeholder="http://127.0.0.1:9910" data-i18n-placeholder="register.endpointPlaceholder" required />
+            </label>
+            <label>
+              <span data-i18n="register.pairingToken">Pairing Token</span>
+              <input id="register-token" type="text" placeholder="token-123" data-i18n-placeholder="register.tokenPlaceholder" required />
+            </label>
+            <label>
+              <span data-i18n="filters.environment">Environment</span>
+              <input id="register-runtime-environment" type="text" placeholder="prod" data-i18n-placeholder="filters.environmentPlaceholder" />
+            </label>
+            <label>
+              <span data-i18n="filters.cluster">Cluster</span>
+              <input id="register-runtime-cluster" type="text" placeholder="alpha" data-i18n-placeholder="filters.clusterPlaceholder" />
+            </label>
+            <label>
+              <span data-i18n="filters.role">Role</span>
+              <input id="register-runtime-role" type="text" placeholder="edge" data-i18n-placeholder="filters.rolePlaceholder" />
+            </label>
+            <label class="checkbox-row">
+              <input id="register-fetch-capabilities" type="checkbox" checked />
+              <span data-i18n="register.fetchCapabilities">Fetch capability and latest-meta from gewyvern</span>
+            </label>
+            <div class="register-actions">
+              <button type="submit" class="primary" data-i18n="register.submit">Register Runtime</button>
+              <button id="register-form-clear" type="button" class="quiet" data-i18n="register.clear">Clear Form</button>
+            </div>
+          </form>
+          <div id="register-preview" class="register-preview"></div>
+          <div id="register-result" class="form-result">No runtime submitted yet.</div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-tab-panel="persistence">
+        <section class="card">
+          <div class="card-head">
+            <h2 data-i18n="persistence.title">Persistence</h2>
+            <span class="chip" data-i18n="persistence.chip">control-plane state</span>
+          </div>
+          <div class="detail-actions">
+            <button id="persistence-save-now" type="button" data-i18n="persistence.saveNow">Save Now</button>
+            <button id="persistence-export-state" type="button" data-i18n="persistence.exportState">Export State</button>
+            <button id="persistence-import-state" type="button" data-i18n="persistence.importState">Import State</button>
+            <input id="persistence-import-file" type="file" accept="application/json,.json" class="hidden" />
+          </div>
+          <div id="persistence-cards" class="metric-grid"></div>
+          <div id="persistence-details" class="stack"></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-tab-panel="sessions">
+        <section class="card">
+          <div class="card-head">
+            <h2 data-i18n="sessions.title">Sessions</h2>
+            <span id="session-count" class="chip">0 sessions</span>
+          </div>
+          <div id="session-list" class="list-stack"></div>
+        </section>
+      </section>
+    </main>
 
     <footer class="footer">
       <span id="status-line">Ready.</span>
