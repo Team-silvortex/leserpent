@@ -63,11 +63,14 @@ public class Program
                     "/v1/fleet/attention-summary",
                     "/v1/fleet/refresh-all",
                     "/v1/fleet/refresh-capabilities",
+                    "/v1/fleet/refresh-sidecars",
                     "/v1/fleet/refresh-status",
                     "/v1/fleet/runtimes-needing-attention",
                     "/v1/runtimes",
                     "/v1/runtimes/{id}",
                     "/v1/runtimes/{id}/attention",
+                    "/v1/runtimes/{id}/sidecar",
+                    "/v1/runtimes/{id}/refresh-sidecar",
                     "/v1/runtimes/{id}/status",
                     "/v1/runtimes/register",
                     "/v1/runtimes/{id}/refresh-capabilities",
@@ -173,16 +176,24 @@ public class Program
 
                 if (capabilityResult is not null && statusResult is not null)
                 {
+                    var sidecarResult = string.IsNullOrWhiteSpace(runtime.SidecarEndpoint)
+                        ? null
+                        : registry.RefreshRuntimeSidecar(
+                            runtime.RuntimeId,
+                            await discovery.DiscoverSidecarStatusAsync(runtime.SidecarEndpoint!, null, cancellationToken));
+
                     refreshed.Add(new FleetRefreshAllItem(
                         capabilityResult.RuntimeId,
                         capabilityResult.Name,
                         capabilityResult.Endpoint,
+                        runtime.SidecarEndpoint,
                         runtime.Tags,
                         capabilityResult.Capabilities,
                         capabilityResult.CapabilitySource,
                         capabilityResult.CapabilityFetchedAt,
                         capabilityResult.CapabilityFetchError,
-                        statusResult.Status));
+                        statusResult.Status,
+                        sidecarResult?.SidecarStatus));
                 }
             }
 
@@ -220,6 +231,39 @@ public class Program
             {
                 filter,
                 refresh = new FleetCapabilityRefreshResponse(refreshed.Count, refreshed),
+            });
+        });
+
+        app.MapPost("/v1/fleet/refresh-sidecars", async (string? environment, string? cluster, string? role, RegistryService registry, CapabilityDiscoveryService discovery, CancellationToken cancellationToken) =>
+        {
+            var filter = new RuntimeListFilter(environment, cluster, role);
+            var refreshed = new List<FleetSidecarRefreshItem>();
+            foreach (var runtime in registry.ListRuntimes(filter))
+            {
+                if (string.IsNullOrWhiteSpace(runtime.SidecarEndpoint))
+                {
+                    continue;
+                }
+
+                var result = registry.RefreshRuntimeSidecar(
+                    runtime.RuntimeId,
+                    await discovery.DiscoverSidecarStatusAsync(runtime.SidecarEndpoint!, null, cancellationToken));
+                if (result is not null)
+                {
+                    refreshed.Add(new FleetSidecarRefreshItem(
+                        result.RuntimeId,
+                        result.Name,
+                        result.Endpoint,
+                        result.SidecarEndpoint,
+                        runtime.Tags,
+                        result.SidecarStatus));
+                }
+            }
+
+            return Results.Ok(new
+            {
+                filter,
+                refresh = new FleetSidecarRefreshResponse(refreshed.Count, refreshed),
             });
         });
 
@@ -279,6 +323,14 @@ public class Program
                 : Results.Ok(new RuntimeStatusRefreshResponse(runtime.RuntimeId, runtime.Name, runtime.Endpoint, runtime.Status));
         });
 
+        app.MapGet("/v1/runtimes/{id}/sidecar", (string id, RegistryService registry) =>
+        {
+            var runtime = registry.GetRuntime(id);
+            return runtime is null
+                ? Results.NotFound(new { error = "runtime_not_found", runtimeId = id })
+                : Results.Ok(new RuntimeSidecarRefreshResponse(runtime.RuntimeId, runtime.Name, runtime.Endpoint, runtime.SidecarEndpoint, runtime.SidecarStatus));
+        });
+
         app.MapPost("/v1/runtimes/register", async (RuntimeRegistrationRequest request, RegistryService registry, CapabilityDiscoveryService discovery, CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Endpoint))
@@ -294,7 +346,10 @@ public class Program
             {
                 var capabilityDiscovery = await discovery.DiscoverAsync(request.Endpoint, request.CapabilityEndpoint, cancellationToken);
                 var statusDiscovery = await discovery.DiscoverStatusAsync(request.Endpoint, request.StatusEndpoint, cancellationToken);
-                return Results.Ok(registry.RegisterRuntimeFromDiscovery(request, capabilityDiscovery, statusDiscovery));
+                var sidecarDiscovery = string.IsNullOrWhiteSpace(request.SidecarEndpoint)
+                    ? null
+                    : await discovery.DiscoverSidecarStatusAsync(request.SidecarEndpoint!, request.SidecarStatusEndpoint, cancellationToken);
+                return Results.Ok(registry.RegisterRuntimeFromDiscovery(request, capabilityDiscovery, statusDiscovery, sidecarDiscovery));
             }
 
             return Results.Ok(registry.RegisterRuntime(request));
@@ -327,6 +382,27 @@ public class Program
             var refreshed = registry.RefreshRuntimeStatus(
                 id,
                 await discovery.DiscoverStatusAsync(runtime.Endpoint, null, cancellationToken));
+            return refreshed is null
+                ? Results.NotFound(new { error = "runtime_not_found", runtimeId = id })
+                : Results.Ok(refreshed);
+        });
+
+        app.MapPost("/v1/runtimes/{id}/refresh-sidecar", async (string id, RegistryService registry, CapabilityDiscoveryService discovery, CancellationToken cancellationToken) =>
+        {
+            var runtime = registry.GetRuntime(id);
+            if (runtime is null)
+            {
+                return Results.NotFound(new { error = "runtime_not_found", runtimeId = id });
+            }
+
+            if (string.IsNullOrWhiteSpace(runtime.SidecarEndpoint))
+            {
+                return Results.BadRequest(new { error = "runtime_has_no_sidecar_endpoint", runtimeId = id });
+            }
+
+            var refreshed = registry.RefreshRuntimeSidecar(
+                id,
+                await discovery.DiscoverSidecarStatusAsync(runtime.SidecarEndpoint!, null, cancellationToken));
             return refreshed is null
                 ? Results.NotFound(new { error = "runtime_not_found", runtimeId = id })
                 : Results.Ok(refreshed);

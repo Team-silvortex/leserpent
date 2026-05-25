@@ -38,13 +38,14 @@ public sealed class RegistryService
             false,
             false,
             false);
-        return RegisterRuntimeInternal(request, capabilities, capabilitySource, capabilityFetchedAt, null, status);
+        return RegisterRuntimeInternal(request, capabilities, capabilitySource, capabilityFetchedAt, null, status, null);
     }
 
     public RuntimeRegistrationResponse RegisterRuntimeFromDiscovery(
         RuntimeRegistrationRequest request,
         CapabilityDiscoveryResult capabilityDiscovery,
-        RuntimeStatusDiscoveryResult statusDiscovery)
+        RuntimeStatusDiscoveryResult statusDiscovery,
+        RuntimeSidecarDiscoveryResult? sidecarDiscovery = null)
     {
         var capabilities = capabilityDiscovery.Capabilities.Count > 0
             ? NormalizeCapabilities(capabilityDiscovery.Capabilities)
@@ -58,7 +59,8 @@ public sealed class RegistryService
             capabilitySource,
             capabilityDiscovery.CapabilityFetchedAt,
             capabilityDiscovery.CapabilityFetchError,
-            statusDiscovery.Status);
+            statusDiscovery.Status,
+            sidecarDiscovery?.SidecarStatus);
     }
 
     public IReadOnlyList<RuntimeSummary> ListRuntimes(RuntimeListFilter? filter = null) =>
@@ -78,7 +80,7 @@ public sealed class RegistryService
             return null;
         }
 
-        var reasons = GetAttentionReasons(runtime.Status);
+        var reasons = GetAttentionReasons(runtime.Status, runtime.SidecarStatus);
         return new RuntimeAttentionView(
             runtime.RuntimeId,
             runtime.Name,
@@ -105,6 +107,11 @@ public sealed class RegistryService
             .GroupBy(runtime => runtime.Status.StatusSource, StringComparer.OrdinalIgnoreCase)
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        var sidecarStatusSourceCounts = values
+            .Where(runtime => runtime.SidecarStatus is not null && !string.IsNullOrWhiteSpace(runtime.SidecarStatus.StatusSource))
+            .GroupBy(runtime => runtime.SidecarStatus!.StatusSource, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
         var environmentCounts = BuildTagCounts(values, runtime => runtime.Tags.Environment);
         var clusterCounts = BuildTagCounts(values, runtime => runtime.Tags.Cluster);
         var roleCounts = BuildTagCounts(values, runtime => runtime.Tags.Role);
@@ -119,8 +126,15 @@ public sealed class RegistryService
             values.Count(runtime => runtime.Status.HasExternalDiagnosticOpinion),
             values.Count(runtime => !string.Equals(runtime.Status.StatusSource, "unobserved", StringComparison.OrdinalIgnoreCase)),
             values.Count(runtime => string.Equals(runtime.Status.StatusSource, "fetch_failed", StringComparison.OrdinalIgnoreCase)),
+            values.Count(runtime => !string.IsNullOrWhiteSpace(runtime.SidecarEndpoint)),
+            values.Count(runtime => runtime.SidecarStatus?.Healthy == true),
+            values.Count(runtime => runtime.SidecarStatus is not null && !string.Equals(runtime.SidecarStatus.StatusSource, "unobserved", StringComparison.OrdinalIgnoreCase)),
+            values.Count(runtime => string.Equals(runtime.SidecarStatus?.StatusSource, "fetch_failed", StringComparison.OrdinalIgnoreCase)),
+            values.Count(runtime => runtime.SidecarStatus?.HasEvidenceChainEnrichment == true),
+            values.Count(runtime => runtime.SidecarStatus?.HasDiagnosticOpinion == true),
             snapshotKindCounts,
             statusSourceCounts,
+            sidecarStatusSourceCounts,
             environmentCounts,
             clusterCounts,
             roleCounts);
@@ -131,7 +145,7 @@ public sealed class RegistryService
             .Where(runtime => MatchesFilter(runtime, filter))
             .Select(runtime =>
             {
-                var reasons = GetAttentionReasons(runtime.Status);
+                var reasons = GetAttentionReasons(runtime.Status, runtime.SidecarStatus);
                 return new RuntimeAttentionItem(
                     runtime.RuntimeId,
                     runtime.Name,
@@ -249,6 +263,28 @@ public sealed class RegistryService
             updated.Status);
     }
 
+    public RuntimeSidecarRefreshResponse? RefreshRuntimeSidecar(string runtimeId, RuntimeSidecarDiscoveryResult discovery)
+    {
+        if (!runtimes.TryGetValue(runtimeId, out var runtime))
+        {
+            return null;
+        }
+
+        var updated = runtime with
+        {
+            SidecarStatus = discovery.SidecarStatus,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+        runtimes[runtimeId] = updated;
+        PersistState();
+        return new RuntimeSidecarRefreshResponse(
+            updated.RuntimeId,
+            updated.Name,
+            updated.Endpoint,
+            updated.SidecarEndpoint,
+            updated.SidecarStatus);
+    }
+
     public (SessionSummary? Session, IReadOnlyList<CapabilityRejection> Rejections, string? RuntimeMissing)
         CreateSession(SessionCreateRequest request)
     {
@@ -311,7 +347,8 @@ public sealed class RegistryService
         string capabilitySource,
         DateTimeOffset? capabilityFetchedAt,
         string? capabilityFetchError,
-        RuntimeStatusSnapshot status)
+        RuntimeStatusSnapshot status,
+        RuntimeSidecarStatusSnapshot? sidecarStatus)
     {
         var now = DateTimeOffset.UtcNow;
         var tags = NormalizeTags(request.Tags);
@@ -323,6 +360,7 @@ public sealed class RegistryService
             var updated = existing with
             {
                 Endpoint = request.Endpoint.Trim(),
+                SidecarEndpoint = NormalizeOptionalEndpoint(request.SidecarEndpoint),
                 PairingToken = request.PairingToken.Trim(),
                 Capabilities = capabilities,
                 CapabilitySource = capabilitySource,
@@ -330,6 +368,7 @@ public sealed class RegistryService
                 CapabilityFetchError = capabilityFetchError,
                 Tags = tags,
                 Status = status,
+                SidecarStatus = sidecarStatus,
                 UpdatedAt = now,
             };
             runtimes[existing.RuntimeId] = updated;
@@ -341,6 +380,7 @@ public sealed class RegistryService
             Guid.NewGuid().ToString("n"),
             request.Name.Trim(),
             request.Endpoint.Trim(),
+            NormalizeOptionalEndpoint(request.SidecarEndpoint),
             request.PairingToken.Trim(),
             now,
             now,
@@ -349,7 +389,8 @@ public sealed class RegistryService
             capabilityFetchedAt,
             capabilityFetchError,
             tags,
-            status);
+            status,
+            sidecarStatus);
         runtimes[created.RuntimeId] = created;
         PersistState();
         return created.ToRegistrationResponse();
@@ -369,6 +410,7 @@ public sealed class RegistryService
                 runtime.RuntimeId,
                 runtime.Name.Trim(),
                 runtime.Endpoint.Trim(),
+                NormalizeOptionalEndpoint(runtime.SidecarEndpoint),
                 runtime.PairingToken.Trim(),
                 runtime.RegisteredAt,
                 runtime.UpdatedAt,
@@ -377,7 +419,8 @@ public sealed class RegistryService
                 runtime.CapabilityFetchedAt,
                 runtime.CapabilityFetchError,
                 NormalizeTags(runtime.Tags),
-                runtime.Status);
+                runtime.Status,
+                runtime.SidecarStatus);
             runtimes[restored.RuntimeId] = restored;
             restoredRuntimeCount += 1;
         }
@@ -475,12 +518,19 @@ public sealed class RegistryService
         return string.Equals(actual, expected.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IReadOnlyList<string> GetAttentionReasons(RuntimeStatusSnapshot status)
+    private static IReadOnlyList<string> GetAttentionReasons(
+        RuntimeStatusSnapshot status,
+        RuntimeSidecarStatusSnapshot? sidecarStatus)
     {
         var reasons = new List<string>();
         if (string.Equals(status.StatusSource, "fetch_failed", StringComparison.OrdinalIgnoreCase))
         {
             reasons.Add("status_fetch_failed");
+        }
+
+        if (string.Equals(sidecarStatus?.StatusSource, "fetch_failed", StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("sidecar_status_fetch_failed");
         }
 
         if (!status.HasLatestSnapshot)
@@ -499,6 +549,8 @@ public sealed class RegistryService
     private static string GetAttentionSeverity(IReadOnlyList<string> reasons) =>
         reasons.Contains("status_fetch_failed", StringComparer.OrdinalIgnoreCase)
             ? "critical"
+            : reasons.Contains("sidecar_status_fetch_failed", StringComparer.OrdinalIgnoreCase)
+                ? "warning"
             : "warning";
 
     private static int AttentionSeverityRank(string severity) =>
@@ -572,10 +624,21 @@ public sealed class RegistryService
         };
     }
 
+    private static string? NormalizeOptionalEndpoint(string? endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            return null;
+        }
+
+        return endpoint.Trim();
+    }
+
     private sealed record RuntimeRecord(
         string RuntimeId,
         string Name,
         string Endpoint,
+        string? SidecarEndpoint,
         string PairingToken,
         DateTimeOffset RegisteredAt,
         DateTimeOffset UpdatedAt,
@@ -584,16 +647,17 @@ public sealed class RegistryService
         DateTimeOffset? CapabilityFetchedAt,
         string? CapabilityFetchError,
         RuntimeTags Tags,
-        RuntimeStatusSnapshot Status)
+        RuntimeStatusSnapshot Status,
+        RuntimeSidecarStatusSnapshot? SidecarStatus)
     {
         public RuntimeRegistrationResponse ToRegistrationResponse() =>
-            new(RuntimeId, Name, Endpoint, RegisteredAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status);
+            new(RuntimeId, Name, Endpoint, SidecarEndpoint, RegisteredAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status, SidecarStatus);
 
         public RuntimeSummary ToSummary() =>
-            new(RuntimeId, Name, Endpoint, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status);
+            new(RuntimeId, Name, Endpoint, SidecarEndpoint, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status, SidecarStatus);
 
         public PersistedRuntimeState ToPersistedState() =>
-            new(RuntimeId, Name, Endpoint, PairingToken, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status);
+            new(RuntimeId, Name, Endpoint, SidecarEndpoint, PairingToken, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status, SidecarStatus);
     }
 
     private sealed record SessionRecord(

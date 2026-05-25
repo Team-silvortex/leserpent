@@ -175,6 +175,7 @@
                 <button id="runtime-detail-refresh-all" class="primary" type="button" data-i18n="runtimeDetail.refreshAll">Refresh This Runtime</button>
                 <button id="runtime-detail-refresh-status" type="button" data-i18n="runtimeDetail.refreshStatus">Refresh Status</button>
                 <button id="runtime-detail-refresh-capabilities" type="button" data-i18n="runtimeDetail.refreshCapabilities">Refresh Capabilities</button>
+                <button id="runtime-detail-refresh-sidecar" type="button" data-i18n="runtimeDetail.refreshSidecar">Refresh Sidecar</button>
                 <button id="runtime-detail-copy-link" type="button" data-i18n="runtimeDetail.copyLink">Copy Runtime Link</button>
               </div>
               <div id="runtime-detail-empty" class="form-result" data-i18n="runtimeDetail.empty">Select a runtime from the table to inspect its capability, status, and attention state.</div>
@@ -212,6 +213,11 @@
                 <button type="button" class="runtime-panel-tab" data-runtime-panel-view="summary" data-i18n="runtimePanel.views.summary">Summary</button>
                 <button type="button" class="runtime-panel-tab" data-runtime-panel-view="analysis" data-i18n="runtimePanel.views.analysis">Analysis</button>
                 <button type="button" class="runtime-panel-tab" data-runtime-panel-view="targets" data-i18n="runtimePanel.views.targets">Targets</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="sidecar-root" data-i18n="runtimePanel.views.sidecarRoot">Sidecar Home</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="sidecar-health" data-i18n="runtimePanel.views.sidecarHealth">Sidecar Health</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="sidecar-status" data-i18n="runtimePanel.views.sidecarStatus">Sidecar Status</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="sidecar-enrichment" data-i18n="runtimePanel.views.sidecarEnrichment">Enrichment</button>
+                <button type="button" class="runtime-panel-tab" data-runtime-panel-view="sidecar-opinion" data-i18n="runtimePanel.views.sidecarOpinion">Opinion</button>
                 <button type="button" id="runtime-panel-open-external" data-i18n="runtimePanel.openExternal">Open in New Tab</button>
               </div>
               <div id="runtime-panel-empty" class="form-result" data-i18n="runtimePanel.empty">Select a runtime to load its child control panel.</div>
@@ -238,6 +244,10 @@
             <label>
               <span data-i18n="register.endpoint">Endpoint</span>
               <input id="register-endpoint" type="text" placeholder="http://127.0.0.1:9910" data-i18n-placeholder="register.endpointPlaceholder" required />
+            </label>
+            <label>
+              <span data-i18n="register.sidecarEndpoint">Sidecar Endpoint</span>
+              <input id="register-sidecar-endpoint" type="text" placeholder="http://127.0.0.1:4321" data-i18n-placeholder="register.sidecarEndpointPlaceholder" />
             </label>
             <label>
               <span data-i18n="register.pairingToken">Pairing Token</span>

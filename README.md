@@ -438,6 +438,7 @@ dotnet run
 - fleet summary / attention summary
 - runtime list / attention list
 - per-runtime child panel with embedded gewyvern views
+- optional paired `etragon` sidecar child views
 - child-panel view state persisted in URL
 - fleet refresh actions
 - single-runtime detail inspection
@@ -450,6 +451,13 @@ dotnet run
 
 - 手工注册 capability
 - `fetchCapabilities=true` 时主动抓取 `gewyvern /v1/capabilities`
+
+同时也支持 very-light 的 nearby sidecar pairing：
+
+- `sidecarEndpoint`
+
+如果提供这条 endpoint，leserpent 会把这台 `gewyvern` 当成
+“runtime + optional paired etragon sidecar”的单元来管理。
 
 抓取成功后，leserpent 会把 gewyvern 的轻量 API surface 归一化成控制面可读的 capability，例如：
 
@@ -475,3 +483,22 @@ dotnet run
 - `hasExternalSidecarContext`
 - `hasExternalEvidenceChainEnrichment`
 - `hasExternalDiagnosticOpinion`
+
+如果 runtime 还配置了 `sidecarEndpoint`，leserpent 也会去读取 paired
+`etragon` 的 very-light sidecar status：
+
+- `healthy`
+- `daemonStatus`
+- `learningActive`
+- `learnedRoutes`
+- `hasEvidenceChainEnrichment`
+- `hasDiagnosticOpinion`
+
+相关控制面入口现在包括：
+
+- `POST /v1/runtimes/{id}/refresh-sidecar`
+- `GET /v1/runtimes/{id}/sidecar`
+- `POST /v1/fleet/refresh-sidecars`
+
+`POST /v1/fleet/refresh-all` 现在也会在刷新 `gewyvern` capability/status 的同时，
+顺手刷新已配对的 `etragon` sidecar 状态。

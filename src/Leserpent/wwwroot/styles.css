@@ -143,6 +143,13 @@ button:hover {
   border-color: var(--accent);
 }
 
+button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+  border-color: var(--line);
+}
+
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -667,6 +674,20 @@ td strong {
 .runtime-panel-trust-meta {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.runtime-panel-trust-action {
+  margin-top: 4px;
+}
+
+.runtime-panel-trust-action button {
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+}
+
+.runtime-panel-trust.bad .runtime-panel-trust-action button {
+  border-color: rgba(170, 57, 57, 0.25);
 }
 
 .runtime-frame-wrap {

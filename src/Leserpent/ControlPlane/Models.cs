@@ -20,6 +20,20 @@ public sealed record RuntimeStatusSnapshot(
     bool HasExternalDiagnosticOpinion
 );
 
+public sealed record RuntimeSidecarStatusSnapshot(
+    string StatusSource,
+    DateTimeOffset? StatusFetchedAt,
+    string? StatusFetchError,
+    bool Healthy,
+    string DaemonStatus,
+    int? TargetCount,
+    bool LearningActive,
+    int LearnedRoutes,
+    bool HasEvidenceChainEnrichment,
+    bool HasDiagnosticOpinion,
+    string? LastError = null
+);
+
 public sealed record RuntimeTags(
     string? Environment,
     string? Cluster,
@@ -40,26 +54,31 @@ public sealed record RuntimeRegistrationRequest(
     RuntimeTags? Tags = null,
     bool FetchCapabilities = false,
     string? CapabilityEndpoint = null,
-    string? StatusEndpoint = null
+    string? StatusEndpoint = null,
+    string? SidecarEndpoint = null,
+    string? SidecarStatusEndpoint = null
 );
 
 public sealed record RuntimeRegistrationResponse(
     string RuntimeId,
     string Name,
     string Endpoint,
+    string? SidecarEndpoint,
     DateTimeOffset RegisteredAt,
     IReadOnlyList<RuntimeCapability> Capabilities,
     string CapabilitySource,
     DateTimeOffset? CapabilityFetchedAt,
     string? CapabilityFetchError,
     RuntimeTags Tags,
-    RuntimeStatusSnapshot Status
+    RuntimeStatusSnapshot Status,
+    RuntimeSidecarStatusSnapshot? SidecarStatus
 );
 
 public sealed record RuntimeSummary(
     string RuntimeId,
     string Name,
     string Endpoint,
+    string? SidecarEndpoint,
     DateTimeOffset RegisteredAt,
     DateTimeOffset UpdatedAt,
     IReadOnlyList<RuntimeCapability> Capabilities,
@@ -67,7 +86,8 @@ public sealed record RuntimeSummary(
     DateTimeOffset? CapabilityFetchedAt,
     string? CapabilityFetchError,
     RuntimeTags Tags,
-    RuntimeStatusSnapshot Status
+    RuntimeStatusSnapshot Status,
+    RuntimeSidecarStatusSnapshot? SidecarStatus
 );
 
 public sealed record SessionCapabilityRequirement(
@@ -152,6 +172,14 @@ public sealed record RuntimeStatusRefreshResponse(
     RuntimeStatusSnapshot Status
 );
 
+public sealed record RuntimeSidecarRefreshResponse(
+    string RuntimeId,
+    string Name,
+    string Endpoint,
+    string? SidecarEndpoint,
+    RuntimeSidecarStatusSnapshot? SidecarStatus
+);
+
 public sealed record FleetSummary(
     int RuntimeCount,
     int RuntimesWithLatestSnapshot,
@@ -162,8 +190,15 @@ public sealed record FleetSummary(
     int RuntimesWithExternalDiagnosticOpinion,
     int RuntimesWithObservedStatus,
     int RuntimesWithStatusFetchFailed,
+    int RuntimesWithPairedSidecar,
+    int RuntimesWithHealthySidecar,
+    int RuntimesWithObservedSidecarStatus,
+    int RuntimesWithSidecarStatusFetchFailed,
+    int RuntimesWithSidecarEvidenceChainEnrichment,
+    int RuntimesWithSidecarDiagnosticOpinion,
     IReadOnlyDictionary<string, int> SnapshotKindCounts,
     IReadOnlyDictionary<string, int> StatusSourceCounts,
+    IReadOnlyDictionary<string, int> SidecarStatusSourceCounts,
     IReadOnlyDictionary<string, int> EnvironmentCounts,
     IReadOnlyDictionary<string, int> ClusterCounts,
     IReadOnlyDictionary<string, int> RoleCounts
@@ -209,6 +244,20 @@ public sealed record FleetStatusRefreshResponse(
     IReadOnlyList<FleetStatusRefreshItem> Runtimes
 );
 
+public sealed record FleetSidecarRefreshItem(
+    string RuntimeId,
+    string Name,
+    string Endpoint,
+    string? SidecarEndpoint,
+    RuntimeTags Tags,
+    RuntimeSidecarStatusSnapshot? SidecarStatus
+);
+
+public sealed record FleetSidecarRefreshResponse(
+    int RefreshedCount,
+    IReadOnlyList<FleetSidecarRefreshItem> Runtimes
+);
+
 public sealed record FleetCapabilityRefreshItem(
     string RuntimeId,
     string Name,
@@ -229,12 +278,14 @@ public sealed record FleetRefreshAllItem(
     string RuntimeId,
     string Name,
     string Endpoint,
+    string? SidecarEndpoint,
     RuntimeTags Tags,
     IReadOnlyList<RuntimeCapability> Capabilities,
     string CapabilitySource,
     DateTimeOffset? CapabilityFetchedAt,
     string? CapabilityFetchError,
-    RuntimeStatusSnapshot Status
+    RuntimeStatusSnapshot Status,
+    RuntimeSidecarStatusSnapshot? SidecarStatus
 );
 
 public sealed record FleetRefreshAllResponse(
@@ -246,6 +297,7 @@ public sealed record PersistedRuntimeState(
     string RuntimeId,
     string Name,
     string Endpoint,
+    string? SidecarEndpoint,
     string PairingToken,
     DateTimeOffset RegisteredAt,
     DateTimeOffset UpdatedAt,
@@ -254,7 +306,8 @@ public sealed record PersistedRuntimeState(
     DateTimeOffset? CapabilityFetchedAt,
     string? CapabilityFetchError,
     RuntimeTags Tags,
-    RuntimeStatusSnapshot Status
+    RuntimeStatusSnapshot Status,
+    RuntimeSidecarStatusSnapshot? SidecarStatus
 );
 
 public sealed record PersistedSessionState(

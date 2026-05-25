@@ -90,10 +90,13 @@ const translations = {
       refreshAll: "Refresh This Runtime",
       refreshStatus: "Refresh Status",
       refreshCapabilities: "Refresh Capabilities",
+      refreshSidecar: "Refresh Sidecar",
       copyLink: "Copy Runtime Link",
       registered: "registered",
       updated: "updated",
       source: "source",
+      sidecarSource: "sidecar source",
+      sidecarLearning: "sidecar learning",
       snapshotKind: "snapshot kind",
       targetCount: "target count",
       summaryJson: "summary json",
@@ -120,7 +123,17 @@ const translations = {
       trustUnobservedMessage: "This runtime has not published a latest snapshot yet, so treat the child panel as a thin endpoint shell until status arrives.",
       trustFetchFailed: "Status fetch failed",
       trustFetchFailedMessage: "The control plane could not refresh this runtime's status, so the child panel may be stale or unreachable right now.",
+      trustSidecarObserved: "Observed sidecar state",
+      trustSidecarObservedMessage: "This child panel is backed by a reachable paired etragon sidecar and is safe to read as nearby diagnostic-partner context.",
+      trustSidecarUnobserved: "Sidecar not observed yet",
+      trustSidecarUnobservedMessage: "A paired etragon endpoint is configured, but the control plane has not observed a sidecar status snapshot yet.",
+      trustSidecarFetchFailed: "Sidecar status fetch failed",
+      trustSidecarFetchFailedMessage: "The control plane could not refresh this paired etragon sidecar, so the sidecar panel may be stale or unreachable right now.",
+      trustNoSidecar: "No paired sidecar",
+      trustNoSidecarMessage: "This runtime does not currently advertise a paired etragon endpoint.",
       trustMeta: "status source: {source} · snapshot: {snapshot}",
+      trustRefreshStatus: "Refresh Status Now",
+      trustRefreshSidecar: "Refresh Sidecar Now",
       openExternal: "Open in New Tab",
       views: {
         root: "Home",
@@ -129,6 +142,11 @@ const translations = {
         summary: "Summary",
         analysis: "Analysis",
         targets: "Targets",
+        sidecarRoot: "Sidecar Home",
+        sidecarHealth: "Sidecar Health",
+        sidecarStatus: "Sidecar Status",
+        sidecarEnrichment: "Enrichment",
+        sidecarOpinion: "Opinion",
       },
     },
     register: {
@@ -138,6 +156,8 @@ const translations = {
       namePlaceholder: "gw-prod-edge-01",
       endpoint: "Endpoint",
       endpointPlaceholder: "http://127.0.0.1:9910",
+      sidecarEndpoint: "Sidecar Endpoint",
+      sidecarEndpointPlaceholder: "http://127.0.0.1:4321",
       pairingToken: "Pairing Token",
       tokenPlaceholder: "token-123",
       fetchCapabilities: "Fetch capability and latest-meta from gewyvern",
@@ -148,15 +168,18 @@ const translations = {
       previewName: "name",
       previewSlice: "slice",
       previewEndpoint: "endpoint",
+      previewSidecar: "sidecar",
       previewCapabilityFetch: "capability fetch",
       suggested: "suggested",
       pendingRuntimeName: "pending runtime name",
       endpointPending: "pending",
       endpointValid: "valid",
       endpointInvalid: "invalid",
+      sidecarUnpaired: "not paired",
       capabilityEnabled: "enabled",
       capabilityDisabled: "disabled",
       blockedEndpoint: "Registration blocked: endpoint must start with http:// or https:// and be a valid URL.",
+      blockedSidecarEndpoint: "Registration blocked: sidecar endpoint must start with http:// or https:// and be a valid URL.",
       blockedDuplicate: "Registration blocked: {reason} already exists on {name} ({endpoint}).",
       duplicateNameAndEndpoint: "name and endpoint",
       duplicateName: "name",
@@ -212,6 +235,7 @@ const translations = {
       critical: "critical",
       warning: "warning",
       statusFetchFailed: "status_fetch_failed",
+      sidecarStatusFetchFailed: "sidecar_status_fetch_failed",
       noLatestSnapshot: "no_latest_snapshot",
       noAnalysisJson: "no_analysis_json",
     },
@@ -227,12 +251,15 @@ const translations = {
       analysisJson: "analysis json",
       sidecarContext: "sidecar context",
       diagnosticOpinions: "diagnostic opinions",
+      pairedSidecars: "paired sidecars",
+      healthySidecars: "healthy sidecars",
       critical: "critical",
       warning: "warning",
     },
     groups: {
       snapshotKinds: "snapshot kinds",
       statusSources: "status sources",
+      sidecarStatusSources: "sidecar status sources",
       environments: "environments",
       clusters: "clusters",
       roles: "roles",
@@ -243,6 +270,10 @@ const translations = {
       unobserved: "unobserved",
       observedSnapshot: "{kind} snapshot",
       observed: "observed",
+      sidecarObserved: "sidecar observed",
+      sidecarStarting: "sidecar starting",
+      sidecarDegraded: "sidecar degraded",
+      sidecarFetchFailed: "sidecar fetch failed",
     },
     notifications: {
       noRuntimeSelected: "No runtime selected.",
@@ -354,10 +385,13 @@ const translations = {
       refreshAll: "刷新该节点",
       refreshStatus: "刷新状态",
       refreshCapabilities: "刷新能力",
+      refreshSidecar: "刷新 Sidecar",
       copyLink: "复制节点链接",
       registered: "注册时间",
       updated: "更新时间",
       source: "来源",
+      sidecarSource: "sidecar 来源",
+      sidecarLearning: "sidecar 学习态",
       snapshotKind: "快照类型",
       targetCount: "target 数量",
       summaryJson: "summary json",
@@ -384,7 +418,17 @@ const translations = {
       trustUnobservedMessage: "这条 runtime 还没有发布 latest snapshot，所以在状态到达前，更适合把子面板理解成一个薄的 endpoint 壳。",
       trustFetchFailed: "状态抓取失败",
       trustFetchFailedMessage: "控制面这次没能刷新这条 runtime 的状态，所以右侧子面板当前可能是陈旧的，或者已经不可达。",
+      trustSidecarObserved: "Sidecar 状态已观测",
+      trustSidecarObservedMessage: "这块子面板背后已经能连到 paired etragon sidecar，可以把它当成邻近诊断搭档的实时上下文来读。",
+      trustSidecarUnobserved: "Sidecar 尚未观测",
+      trustSidecarUnobservedMessage: "这条 runtime 已经配置了 paired etragon endpoint，但控制面还没有拿到 sidecar 状态快照。",
+      trustSidecarFetchFailed: "Sidecar 状态抓取失败",
+      trustSidecarFetchFailedMessage: "控制面这次没能刷新 paired etragon sidecar，所以右侧 sidecar 子面板当前可能是陈旧的，或者已经不可达。",
+      trustNoSidecar: "没有 paired sidecar",
+      trustNoSidecarMessage: "这条 runtime 当前还没有配置 etragon sidecar endpoint。",
       trustMeta: "状态来源：{source} · 快照：{snapshot}",
+      trustRefreshStatus: "立即刷新状态",
+      trustRefreshSidecar: "立即刷新 Sidecar",
       openExternal: "新标签打开",
       views: {
         root: "主页",
@@ -393,6 +437,11 @@ const translations = {
         summary: "摘要",
         analysis: "分析",
         targets: "Targets",
+        sidecarRoot: "Sidecar 主页",
+        sidecarHealth: "Sidecar 健康",
+        sidecarStatus: "Sidecar 状态",
+        sidecarEnrichment: "补强",
+        sidecarOpinion: "诊断意见",
       },
     },
     register: {
@@ -402,6 +451,8 @@ const translations = {
       namePlaceholder: "gw-prod-edge-01",
       endpoint: "Endpoint",
       endpointPlaceholder: "http://127.0.0.1:9910",
+      sidecarEndpoint: "Sidecar Endpoint",
+      sidecarEndpointPlaceholder: "http://127.0.0.1:4321",
       pairingToken: "配对令牌",
       tokenPlaceholder: "token-123",
       fetchCapabilities: "注册时从 gewyvern 拉取 capability 和 latest-meta",
@@ -412,15 +463,18 @@ const translations = {
       previewName: "名称",
       previewSlice: "归属切片",
       previewEndpoint: "endpoint",
+      previewSidecar: "sidecar",
       previewCapabilityFetch: "能力抓取",
       suggested: "建议",
       pendingRuntimeName: "等待生成 runtime 名称",
       endpointPending: "待输入",
       endpointValid: "有效",
       endpointInvalid: "无效",
+      sidecarUnpaired: "未配对",
       capabilityEnabled: "开启",
       capabilityDisabled: "关闭",
       blockedEndpoint: "注册已拦截：endpoint 必须以 http:// 或 https:// 开头，并且是合法 URL。",
+      blockedSidecarEndpoint: "注册已拦截：sidecar endpoint 必须以 http:// 或 https:// 开头，并且是合法 URL。",
       blockedDuplicate: "注册已拦截：{reason} 已存在于 {name} ({endpoint})。",
       duplicateNameAndEndpoint: "名称和 endpoint",
       duplicateName: "名称",
@@ -476,6 +530,7 @@ const translations = {
       critical: "严重",
       warning: "警告",
       statusFetchFailed: "状态抓取失败",
+      sidecarStatusFetchFailed: "sidecar 状态抓取失败",
       noLatestSnapshot: "没有 latest snapshot",
       noAnalysisJson: "没有 analysis json",
     },
@@ -491,12 +546,15 @@ const translations = {
       analysisJson: "analysis json",
       sidecarContext: "sidecar context",
       diagnosticOpinions: "diagnostic opinions",
+      pairedSidecars: "paired sidecars",
+      healthySidecars: "healthy sidecars",
       critical: "严重",
       warning: "警告",
     },
     groups: {
       snapshotKinds: "快照类型",
       statusSources: "状态来源",
+      sidecarStatusSources: "sidecar 状态来源",
       environments: "环境",
       clusters: "集群",
       roles: "角色",
@@ -507,6 +565,10 @@ const translations = {
       unobserved: "未观测",
       observedSnapshot: "{kind} 快照",
       observed: "已观测",
+      sidecarObserved: "sidecar 已观测",
+      sidecarStarting: "sidecar 启动中",
+      sidecarDegraded: "sidecar 已降级",
+      sidecarFetchFailed: "sidecar 抓取失败",
     },
     notifications: {
       noRuntimeSelected: "当前没有选中的 runtime。",
@@ -589,6 +651,7 @@ const nodes = {
   runtimeDetailRefreshAll: document.getElementById("runtime-detail-refresh-all"),
   runtimeDetailRefreshStatus: document.getElementById("runtime-detail-refresh-status"),
   runtimeDetailRefreshCapabilities: document.getElementById("runtime-detail-refresh-capabilities"),
+  runtimeDetailRefreshSidecar: document.getElementById("runtime-detail-refresh-sidecar"),
   runtimeDetailCopyLink: document.getElementById("runtime-detail-copy-link"),
   runtimePanelChip: document.getElementById("runtime-panel-chip"),
   runtimePanelBreadcrumb: document.getElementById("runtime-panel-breadcrumb"),
@@ -612,6 +675,7 @@ const nodes = {
   registerForm: document.getElementById("register-form"),
   registerName: document.getElementById("register-name"),
   registerEndpoint: document.getElementById("register-endpoint"),
+  registerSidecarEndpoint: document.getElementById("register-sidecar-endpoint"),
   registerToken: document.getElementById("register-token"),
   registerRuntimeEnvironment: document.getElementById("register-runtime-environment"),
   registerRuntimeCluster: document.getElementById("register-runtime-cluster"),
@@ -753,8 +817,37 @@ function applyTabShell() {
   }
 }
 
+function isSidecarView(view = state.runtimePanelView) {
+  return typeof view === "string" && view.startsWith("sidecar-");
+}
+
 function runtimePanelUrl(runtime, view = state.runtimePanelView) {
-  if (!runtime?.endpoint) {
+  if (!runtime) {
+    return "";
+  }
+
+  if (isSidecarView(view)) {
+    if (!runtime.sidecarEndpoint) {
+      return "";
+    }
+
+    const sidecarBase = runtime.sidecarEndpoint.replace(/\/+$/, "");
+    switch (view) {
+      case "sidecar-health":
+        return `${sidecarBase}/health`;
+      case "sidecar-status":
+        return `${sidecarBase}/v1/latest/status`;
+      case "sidecar-enrichment":
+        return `${sidecarBase}/v1/latest/evidence-chain-enrichment.json`;
+      case "sidecar-opinion":
+        return `${sidecarBase}/v1/latest/diagnostic-opinion.json`;
+      case "sidecar-root":
+      default:
+        return sidecarBase;
+    }
+  }
+
+  if (!runtime.endpoint) {
     return "";
   }
 
@@ -776,12 +869,72 @@ function runtimePanelUrl(runtime, view = state.runtimePanelView) {
   }
 }
 
-function runtimePanelTrustState(status) {
+function runtimePanelTrustState(runtime, view = state.runtimePanelView) {
+  if (isSidecarView(view)) {
+    if (!runtime?.sidecarEndpoint) {
+      return {
+        tone: "warn",
+        label: t("runtimePanel.trustNoSidecar"),
+        message: t("runtimePanel.trustNoSidecarMessage"),
+        source: "none",
+        snapshot: "sidecar",
+        refreshKind: null,
+      };
+    }
+
+    const sidecarStatus = runtime.sidecarStatus;
+    if (!sidecarStatus) {
+      return {
+        tone: "warn",
+        label: t("runtimePanel.trustSidecarUnobserved"),
+        message: t("runtimePanel.trustSidecarUnobservedMessage"),
+        source: "unobserved",
+        snapshot: "starting",
+        refreshKind: "sidecar",
+      };
+    }
+
+    if (sidecarStatus.statusSource === "fetch_failed") {
+      return {
+        tone: "bad",
+        label: t("runtimePanel.trustSidecarFetchFailed"),
+        message: t("runtimePanel.trustSidecarFetchFailedMessage"),
+        source: sidecarStatus.statusSource,
+        snapshot: sidecarStatus.daemonStatus || "unknown",
+        refreshKind: "sidecar",
+      };
+    }
+
+    if (sidecarStatus.statusSource === "unobserved" || sidecarStatus.daemonStatus === "starting") {
+      return {
+        tone: "warn",
+        label: t("runtimePanel.trustSidecarUnobserved"),
+        message: t("runtimePanel.trustSidecarUnobservedMessage"),
+        source: sidecarStatus.statusSource,
+        snapshot: sidecarStatus.daemonStatus || "starting",
+        refreshKind: "sidecar",
+      };
+    }
+
+    return {
+      tone: sidecarStatus.daemonStatus === "degraded" ? "warn" : "good",
+      label: t("runtimePanel.trustSidecarObserved"),
+      message: t("runtimePanel.trustSidecarObservedMessage"),
+      source: sidecarStatus.statusSource,
+      snapshot: sidecarStatus.daemonStatus || "ready",
+      refreshKind: null,
+    };
+  }
+
+  const status = runtime?.status;
   if (!status || status.statusSource === "fetch_failed") {
     return {
       tone: "bad",
       label: t("runtimePanel.trustFetchFailed"),
       message: t("runtimePanel.trustFetchFailedMessage"),
+      source: status?.statusSource || "fetch_failed",
+      snapshot: status?.snapshotKind || t("runtimeDetail.none"),
+      refreshKind: "status",
     };
   }
 
@@ -790,6 +943,9 @@ function runtimePanelTrustState(status) {
       tone: "warn",
       label: t("runtimePanel.trustUnobserved"),
       message: t("runtimePanel.trustUnobservedMessage"),
+      source: status.statusSource,
+      snapshot: status.snapshotKind || t("runtimeDetail.none"),
+      refreshKind: null,
     };
   }
 
@@ -797,6 +953,9 @@ function runtimePanelTrustState(status) {
     tone: "good",
     label: t("runtimePanel.trustObserved"),
     message: t("runtimePanel.trustObservedMessage"),
+    source: status.statusSource,
+    snapshot: status.snapshotKind || t("runtimeDetail.none"),
+    refreshKind: null,
   };
 }
 
@@ -839,7 +998,9 @@ function refreshLabel(kind) {
     ? t("notifications.runtimeRefreshAll")
     : kind === "status"
       ? t("notifications.runtimeRefreshStatus")
-      : t("notifications.runtimeRefreshCapabilities");
+      : kind === "sidecar"
+        ? t("runtimeDetail.refreshSidecar")
+        : t("notifications.runtimeRefreshCapabilities");
 }
 
 function renderMetricCards(target, items) {
@@ -976,6 +1137,22 @@ function statusBadge(status) {
   return { text: t("statuses.observedSnapshot", { kind: status.snapshotKind || t("statuses.observed") }), tone: "good" };
 }
 
+function sidecarStatusBadge(sidecarStatus) {
+  if (!sidecarStatus) {
+    return { text: t("register.sidecarUnpaired"), tone: "warn" };
+  }
+  if (sidecarStatus.statusSource === "fetch_failed") {
+    return { text: t("statuses.sidecarFetchFailed"), tone: "bad" };
+  }
+  if (sidecarStatus.daemonStatus === "starting") {
+    return { text: t("statuses.sidecarStarting"), tone: "warn" };
+  }
+  if (sidecarStatus.daemonStatus === "degraded") {
+    return { text: t("statuses.sidecarDegraded"), tone: "warn" };
+  }
+  return { text: t("statuses.sidecarObserved"), tone: "good" };
+}
+
 function runtimeStatusHint(status) {
   if (!status) {
     return t("statuses.unobserved");
@@ -1049,13 +1226,18 @@ function maybePrefillRuntimeNameFromEndpoint() {
 
 function renderRegisterPreview() {
   const endpoint = nodes.registerEndpoint.value.trim();
+  const sidecarEndpoint = nodes.registerSidecarEndpoint.value.trim();
   const explicitName = nodes.registerName.value.trim();
   const endpointValid = endpoint.length > 0 && isLikelyHttpEndpoint(endpoint);
+  const sidecarEndpointValid = sidecarEndpoint.length > 0 ? isLikelyHttpEndpoint(sidecarEndpoint) : true;
   const suggestedName = endpointValid ? suggestedRuntimeName(endpoint) : "";
   const effectiveName = explicitName || suggestedName || t("register.pendingRuntimeName");
   const endpointState = endpoint.length === 0
     ? t("register.endpointPending")
     : endpointValid ? t("register.endpointValid") : t("register.endpointInvalid");
+  const sidecarState = sidecarEndpoint.length === 0
+    ? t("register.sidecarUnpaired")
+    : sidecarEndpointValid ? t("register.endpointValid") : t("register.endpointInvalid");
   const slice = [
     nodes.registerRuntimeEnvironment.value.trim(),
     nodes.registerRuntimeCluster.value.trim(),
@@ -1067,6 +1249,7 @@ function renderRegisterPreview() {
     <div class="hint-line">${escapeHtml(t("register.previewName"))}: <strong>${escapeHtml(effectiveName)}</strong>${!explicitName && suggestedName ? ` <span class="tag-pill">${escapeHtml(t("register.suggested"))}</span>` : ""}</div>
     <div class="hint-line">${escapeHtml(t("register.previewSlice"))}: <strong>${escapeHtml(slice)}</strong></div>
     <div class="hint-line">${escapeHtml(t("register.previewEndpoint"))}: <strong>${escapeHtml(endpointState)}</strong>${endpoint ? ` · ${escapeHtml(endpoint)}` : ""}</div>
+    <div class="hint-line">${escapeHtml(t("register.previewSidecar"))}: <strong>${escapeHtml(sidecarState)}</strong>${sidecarEndpoint ? ` · ${escapeHtml(sidecarEndpoint)}` : ""}</div>
     <div class="hint-line">${escapeHtml(t("register.previewCapabilityFetch"))}: <strong>${escapeHtml(nodes.registerFetchCapabilities.checked ? t("register.capabilityEnabled") : t("register.capabilityDisabled"))}</strong></div>
   `;
 }
@@ -1111,9 +1294,12 @@ function renderRuntimes(payload, attentionMap) {
       .filter((item) => item.support === "fully_supported")
       .map((item) => item.key);
     const sidecarBits = [
+      runtime.sidecarEndpoint ? "paired" : null,
+      runtime.sidecarStatus?.Healthy ? "healthy" : null,
+      runtime.sidecarStatus?.HasEvidenceChainEnrichment ? "enrichment" : null,
+      runtime.sidecarStatus?.HasDiagnosticOpinion ? "opinion" : null,
       runtime.status.hasExternalSidecarContext ? "context" : null,
-      runtime.status.hasExternalEvidenceChainEnrichment ? "enrichment" : null,
-      runtime.status.hasExternalDiagnosticOpinion ? "opinion" : null,
+      runtime.status.hasExternalDiagnosticOpinion ? "merged-opinion" : null,
     ].filter(Boolean);
 
     return `
@@ -1155,6 +1341,7 @@ function renderRuntimes(payload, attentionMap) {
           <div class="inline-actions">
             <button type="button" data-action="show-attention" data-runtime-id="${escapeHtml(runtime.runtimeId)}">${escapeHtml(t("runtimes.actions.attention"))}</button>
             <button type="button" data-action="refresh-status" data-runtime-id="${escapeHtml(runtime.runtimeId)}">${escapeHtml(t("runtimes.actions.status"))}</button>
+            ${runtime.sidecarEndpoint ? `<button type="button" data-action="refresh-sidecar" data-runtime-id="${escapeHtml(runtime.runtimeId)}">${escapeHtml(t("runtimeDetail.refreshSidecar"))}</button>` : ""}
             <button type="button" data-action="refresh-all" data-runtime-id="${escapeHtml(runtime.runtimeId)}">${escapeHtml(t("runtimes.actions.all"))}</button>
           </div>
         </td>
@@ -1184,7 +1371,11 @@ function renderRuntimes(payload, attentionMap) {
         return;
       }
 
-      const kind = button.dataset.action === "refresh-status" ? "status" : "all";
+      const kind = button.dataset.action === "refresh-status"
+        ? "status"
+        : button.dataset.action === "refresh-sidecar"
+          ? "sidecar"
+          : "all";
       await refreshRuntimeById(runtimeId, kind);
     });
   }
@@ -1199,6 +1390,7 @@ function renderRuntimeDetail(runtime, attention) {
   if (!runtime) {
     nodes.runtimeDetailChip.textContent = t("runtimeDetail.nothingSelected");
     nodes.runtimeDetailActions.classList.add("hidden");
+    nodes.runtimeDetailRefreshSidecar.disabled = true;
     nodes.runtimeDetailEmpty.classList.remove("hidden");
     nodes.runtimeDetailPanel.classList.add("hidden");
     nodes.runtimeDetailIdentity.innerHTML = "";
@@ -1209,13 +1401,16 @@ function renderRuntimeDetail(runtime, attention) {
   }
 
   const badge = statusBadge(runtime.status);
+  const sidecarBadge = sidecarStatusBadge(runtime.sidecarStatus);
   nodes.runtimeDetailChip.textContent = runtime.name;
   nodes.runtimeDetailActions.classList.remove("hidden");
+  nodes.runtimeDetailRefreshSidecar.disabled = !runtime.sidecarEndpoint;
   nodes.runtimeDetailEmpty.classList.add("hidden");
   nodes.runtimeDetailPanel.classList.remove("hidden");
   nodes.runtimeDetailIdentity.innerHTML = `
     <div><strong>${escapeHtml(runtime.name)}</strong></div>
     <div class="item-meta">${escapeHtml(runtime.endpoint)}</div>
+    ${runtime.sidecarEndpoint ? `<div class="item-meta">${escapeHtml(t("register.sidecarEndpoint"))}: ${escapeHtml(runtime.sidecarEndpoint)}</div>` : ""}
     <div class="hint-line">${escapeHtml(t("runtimeDetail.registered"))}: ${escapeHtml(runtime.registeredAt)}</div>
     <div class="hint-line">${escapeHtml(t("runtimeDetail.updated"))}: ${escapeHtml(runtime.updatedAt)}</div>
     <div class="group-list">
@@ -1231,6 +1426,10 @@ function renderRuntimeDetail(runtime, attention) {
     <div class="hint-line">${escapeHtml(t("runtimeDetail.targetCount"))}: ${escapeHtml(runtime.status.targetCount ?? t("runtimeDetail.na"))}</div>
     <div class="hint-line">${escapeHtml(t("runtimeDetail.summaryJson"))}: ${escapeHtml(runtime.status.hasSummaryJson)}</div>
     <div class="hint-line">${escapeHtml(t("runtimeDetail.analysisJson"))}: ${escapeHtml(runtime.status.hasAnalysisJson)}</div>
+    <div class="hint-line">${escapeHtml(t("register.sidecarEndpoint"))}: <strong>${escapeHtml(runtime.sidecarEndpoint || t("register.sidecarUnpaired"))}</strong></div>
+    <div class="hint-line">${escapeHtml(t("runtimes.columns.sidecar"))}: <span class="runtime-state ${escapeHtml(sidecarBadge.tone)}">${escapeHtml(sidecarBadge.text)}</span></div>
+    ${runtime.sidecarStatus ? `<div class="hint-line">${escapeHtml(t("runtimeDetail.sidecarSource"))}: ${escapeHtml(runtime.sidecarStatus.statusSource)}</div>
+    <div class="hint-line">${escapeHtml(t("runtimeDetail.sidecarLearning"))}: ${escapeHtml(runtime.sidecarStatus.learningActive)} · ${escapeHtml(runtime.sidecarStatus.learnedRoutes)}</div>` : ""}
   `;
   const capabilityKeys = (runtime.capabilities || [])
     .map((item) => [item.key, item.support])
@@ -1273,8 +1472,7 @@ function renderRuntimePanel(runtime) {
 
   const url = runtimePanelUrl(runtime);
   const viewLabel = t(`runtimePanel.views.${state.runtimePanelView}`);
-  const trust = runtimePanelTrustState(runtime.status);
-  const snapshotLabel = runtime.status.snapshotKind || t("runtimeDetail.none");
+  const trust = runtimePanelTrustState(runtime, state.runtimePanelView);
 
   nodes.runtimePanelChip.textContent = runtime.name;
   nodes.runtimePanelBreadcrumb.classList.remove("hidden");
@@ -1292,11 +1490,32 @@ function renderRuntimePanel(runtime) {
       <span class="runtime-state ${escapeHtml(trust.tone)}">${escapeHtml(trust.label)}</span>
     </div>
     <div class="runtime-panel-trust-message">${escapeHtml(trust.message)}</div>
-    <div class="runtime-panel-trust-meta">${escapeHtml(t("runtimePanel.trustMeta", { source: runtime.status.statusSource, snapshot: snapshotLabel }))}</div>
+    <div class="runtime-panel-trust-meta">${escapeHtml(t("runtimePanel.trustMeta", { source: trust.source, snapshot: trust.snapshot }))}</div>
+    ${trust.refreshKind
+      ? `<div class="runtime-panel-trust-action"><button type="button" data-runtime-panel-refresh="${escapeHtml(trust.refreshKind)}">${escapeHtml(trust.refreshKind === "sidecar" ? t("runtimePanel.trustRefreshSidecar") : t("runtimePanel.trustRefreshStatus"))}</button></div>`
+      : ""}
   `;
+  const trustRefreshButton = nodes.runtimePanelTrust.querySelector("[data-runtime-panel-refresh]");
+  if (trustRefreshButton) {
+    trustRefreshButton.addEventListener("click", async () => {
+      await refreshRuntimeById(runtime.runtimeId, trustRefreshButton.dataset.runtimePanelRefresh);
+    });
+  }
   nodes.runtimePanelActions.classList.remove("hidden");
-  nodes.runtimePanelEmpty.classList.add("hidden");
-  nodes.runtimePanelFrameWrap.classList.remove("hidden");
+  for (const tab of nodes.runtimePanelTabs) {
+    const wantsSidecar = isSidecarView(tab.dataset.runtimePanelView);
+    tab.disabled = wantsSidecar && !runtime.sidecarEndpoint;
+  }
+  const sidecarViewWithoutEndpoint = isSidecarView(state.runtimePanelView) && !runtime.sidecarEndpoint;
+  nodes.runtimePanelEmpty.classList.toggle("hidden", !sidecarViewWithoutEndpoint);
+  nodes.runtimePanelFrameWrap.classList.toggle("hidden", sidecarViewWithoutEndpoint);
+  if (sidecarViewWithoutEndpoint) {
+    nodes.runtimePanelEmpty.textContent = t("runtimePanel.trustNoSidecarMessage");
+    nodes.runtimePanelFrame.src = "about:blank";
+    nodes.runtimePanelUrl.textContent = "";
+    nodes.runtimePanelOpenExternal.removeAttribute("href");
+    return;
+  }
   nodes.runtimePanelUrl.textContent = `${t("runtimePanel.sourceUrl")}: ${url}`;
   nodes.runtimePanelFrame.src = url;
   nodes.runtimePanelOpenExternal.href = url;
@@ -1321,8 +1540,14 @@ async function refreshRuntimeById(runtimeId, kind) {
     if (kind === "all") {
       await postJson(`/v1/runtimes/${runtimeId}/refresh-capabilities`);
       await postJson(`/v1/runtimes/${runtimeId}/refresh-status`);
+      const selectedRuntime = state.latestRuntimes.find((runtime) => runtime.runtimeId === runtimeId) || null;
+      if (selectedRuntime?.sidecarEndpoint) {
+        await postJson(`/v1/runtimes/${runtimeId}/refresh-sidecar`);
+      }
     } else if (kind === "status") {
       await postJson(`/v1/runtimes/${runtimeId}/refresh-status`);
+    } else if (kind === "sidecar") {
+      await postJson(`/v1/runtimes/${runtimeId}/refresh-sidecar`);
     } else {
       await postJson(`/v1/runtimes/${runtimeId}/refresh-capabilities`);
     }
@@ -1372,6 +1597,7 @@ function clearRegisterForm() {
   state.registerNameTouched = false;
   nodes.registerName.value = "";
   nodes.registerEndpoint.value = "";
+  nodes.registerSidecarEndpoint.value = "";
   nodes.registerToken.value = "";
   syncRegisterFormTagsFromFilter();
   nodes.registerFetchCapabilities.checked = true;
@@ -1401,6 +1627,8 @@ function renderDashboardFromCache() {
     [t("metrics.latestSnapshots"), fleetSummary.summary.runtimesWithLatestSnapshot],
     [t("metrics.summaryJson"), fleetSummary.summary.runtimesWithSummaryJson],
     [t("metrics.analysisJson"), fleetSummary.summary.runtimesWithAnalysisJson],
+    [t("metrics.pairedSidecars"), fleetSummary.summary.runtimesWithPairedSidecar],
+    [t("metrics.healthySidecars"), fleetSummary.summary.runtimesWithHealthySidecar],
     [t("metrics.sidecarContext"), fleetSummary.summary.runtimesWithExternalSidecarContext],
     [t("metrics.diagnosticOpinions"), fleetSummary.summary.runtimesWithExternalDiagnosticOpinion],
   ]);
@@ -1410,6 +1638,7 @@ function renderDashboardFromCache() {
   renderGroupCards(nodes.fleetSummaryGroups, {
     [t("groups.snapshotKinds")]: fleetSummary.summary.snapshotKindCounts,
     [t("groups.statusSources")]: fleetSummary.summary.statusSourceCounts,
+    [t("groups.sidecarStatusSources")]: fleetSummary.summary.sidecarStatusSourceCounts,
     [t("groups.environments")]: fleetSummary.summary.environmentCounts,
     [t("groups.clusters")]: fleetSummary.summary.clusterCounts,
     [t("groups.roles")]: fleetSummary.summary.roleCounts,
@@ -1562,8 +1791,16 @@ async function submitRegisterForm(event) {
   event.preventDefault();
   const name = nodes.registerName.value.trim();
   const endpoint = nodes.registerEndpoint.value.trim();
+  const sidecarEndpoint = nodes.registerSidecarEndpoint.value.trim();
   if (!isLikelyHttpEndpoint(endpoint)) {
     nodes.registerResult.textContent = t("register.blockedEndpoint");
+    state.activeTab = "register";
+    applyTabShell();
+    return;
+  }
+
+  if (sidecarEndpoint && !isLikelyHttpEndpoint(sidecarEndpoint)) {
+    nodes.registerResult.textContent = t("register.blockedSidecarEndpoint");
     state.activeTab = "register";
     applyTabShell();
     return;
@@ -1591,6 +1828,7 @@ async function submitRegisterForm(event) {
   const body = {
     name,
     endpoint,
+    sidecarEndpoint: sidecarEndpoint || null,
     pairingToken: nodes.registerToken.value.trim(),
     capabilities: [],
     tags: {
@@ -1701,12 +1939,14 @@ nodes.persistenceImportFile.addEventListener("change", (event) => {
 nodes.runtimeDetailRefreshAll.addEventListener("click", () => refreshSelectedRuntime("all"));
 nodes.runtimeDetailRefreshStatus.addEventListener("click", () => refreshSelectedRuntime("status"));
 nodes.runtimeDetailRefreshCapabilities.addEventListener("click", () => refreshSelectedRuntime("capabilities"));
+nodes.runtimeDetailRefreshSidecar.addEventListener("click", () => refreshSelectedRuntime("sidecar"));
 nodes.runtimeDetailCopyLink.addEventListener("click", copySelectedRuntimeLink);
 nodes.registerName.addEventListener("input", () => {
   state.registerNameTouched = nodes.registerName.value.trim().length > 0;
   renderRegisterPreview();
 });
 nodes.registerEndpoint.addEventListener("input", maybePrefillRuntimeNameFromEndpoint);
+nodes.registerSidecarEndpoint.addEventListener("input", renderRegisterPreview);
 nodes.registerRuntimeEnvironment.addEventListener("input", renderRegisterPreview);
 nodes.registerRuntimeCluster.addEventListener("input", renderRegisterPreview);
 nodes.registerRuntimeRole.addEventListener("input", renderRegisterPreview);

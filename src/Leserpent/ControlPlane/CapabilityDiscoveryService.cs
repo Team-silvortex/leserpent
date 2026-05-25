@@ -73,6 +73,54 @@ public sealed class CapabilityDiscoveryService(HttpClient httpClient)
         }
     }
 
+    public async Task<RuntimeSidecarDiscoveryResult> DiscoverSidecarStatusAsync(
+        string sidecarEndpoint,
+        string? sidecarStatusEndpoint,
+        CancellationToken cancellationToken)
+    {
+        var healthUrl = BuildSidecarHealthUrl(sidecarEndpoint);
+        var statusUrl = BuildSidecarStatusUrl(sidecarEndpoint, sidecarStatusEndpoint);
+        var enrichmentUrl = BuildSidecarEnrichmentUrl(sidecarEndpoint);
+        var opinionUrl = BuildSidecarOpinionUrl(sidecarEndpoint);
+
+        try
+        {
+            var healthPayload = await httpClient.GetFromJsonAsync<EtragonHealthPayload>(healthUrl, cancellationToken);
+            if (healthPayload is null || !string.Equals(healthPayload.Status, "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                return RuntimeSidecarDiscoveryResult.Failed(statusUrl, "failed to decode etragon health payload");
+            }
+
+            var statusPayload = await httpClient.GetFromJsonAsync<EtragonLatestStatusPayload>(statusUrl, cancellationToken);
+            if (statusPayload is null)
+            {
+                return RuntimeSidecarDiscoveryResult.Failed(statusUrl, "failed to decode etragon latest-status payload");
+            }
+
+            var hasEnrichment = await EndpointReturnsUsefulBodyAsync(enrichmentUrl, cancellationToken);
+            var hasOpinion = await EndpointReturnsUsefulBodyAsync(opinionUrl, cancellationToken);
+
+            return RuntimeSidecarDiscoveryResult.Succeeded(
+                statusUrl,
+                new RuntimeSidecarStatusSnapshot(
+                    "etragon-api",
+                    DateTimeOffset.UtcNow,
+                    null,
+                    true,
+                    NormalizeSidecarDaemonStatus(statusPayload.Status),
+                    statusPayload.TargetCount,
+                    statusPayload.LearningActive,
+                    statusPayload.LearnedRoutes,
+                    hasEnrichment,
+                    hasOpinion,
+                    statusPayload.LastError));
+        }
+        catch (Exception ex)
+        {
+            return RuntimeSidecarDiscoveryResult.Failed(statusUrl, ex.Message);
+        }
+    }
+
     private static void AddEndpointCapability(List<RuntimeCapability> capabilities, IReadOnlyList<string> endpoints, string path, string key, string description)
     {
         capabilities.Add(new RuntimeCapability(
@@ -101,6 +149,62 @@ public sealed class CapabilityDiscoveryService(HttpClient httpClient)
         return endpoint.TrimEnd('/') + "/v1/latest/meta";
     }
 
+    private static string BuildSidecarHealthUrl(string sidecarEndpoint) =>
+        sidecarEndpoint.TrimEnd('/') + "/health";
+
+    private static string BuildSidecarStatusUrl(string sidecarEndpoint, string? sidecarStatusEndpoint)
+    {
+        if (!string.IsNullOrWhiteSpace(sidecarStatusEndpoint))
+        {
+            return sidecarStatusEndpoint.Trim();
+        }
+
+        return sidecarEndpoint.TrimEnd('/') + "/v1/latest/status";
+    }
+
+    private static string BuildSidecarEnrichmentUrl(string sidecarEndpoint) =>
+        sidecarEndpoint.TrimEnd('/') + "/v1/latest/evidence-chain-enrichment.json";
+
+    private static string BuildSidecarOpinionUrl(string sidecarEndpoint) =>
+        sidecarEndpoint.TrimEnd('/') + "/v1/latest/diagnostic-opinion.json";
+
+    private async Task<bool> EndpointReturnsUsefulBodyAsync(string url, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await httpClient.GetAsync(url, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            var body = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+            return !string.IsNullOrWhiteSpace(body)
+                && !string.Equals(body, "null", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(body, "{}", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string NormalizeSidecarDaemonStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return "unknown";
+        }
+
+        return status.Trim().ToLowerInvariant() switch
+        {
+            "ready" => "ready",
+            "degraded" => "degraded",
+            "starting" => "starting",
+            _ => "unknown",
+        };
+    }
+
     private sealed record GewyvernCapabilityPayload(
         [property: JsonPropertyName("service")] string Service,
         [property: JsonPropertyName("version")] string Version,
@@ -119,6 +223,18 @@ public sealed class CapabilityDiscoveryService(HttpClient httpClient)
         [property: JsonPropertyName("has_external_sidecar_context")] bool HasExternalSidecarContext,
         [property: JsonPropertyName("has_external_evidence_chain_enrichment")] bool HasExternalEvidenceChainEnrichment,
         [property: JsonPropertyName("has_external_diagnostic_opinion")] bool HasExternalDiagnosticOpinion
+    );
+
+    private sealed record EtragonHealthPayload(
+        [property: JsonPropertyName("status")] string Status
+    );
+
+    private sealed record EtragonLatestStatusPayload(
+        [property: JsonPropertyName("status")] string? Status,
+        [property: JsonPropertyName("target_count")] int? TargetCount,
+        [property: JsonPropertyName("learning_active")] bool LearningActive,
+        [property: JsonPropertyName("learned_routes")] int LearnedRoutes,
+        [property: JsonPropertyName("last_error")] string? LastError
     );
 }
 
@@ -156,4 +272,26 @@ public sealed record RuntimeStatusDiscoveryResult(
             false,
             false,
             false));
+}
+
+public sealed record RuntimeSidecarDiscoveryResult(
+    string StatusEndpoint,
+    RuntimeSidecarStatusSnapshot? SidecarStatus)
+{
+    public static RuntimeSidecarDiscoveryResult Succeeded(string statusEndpoint, RuntimeSidecarStatusSnapshot status) =>
+        new(statusEndpoint, status);
+
+    public static RuntimeSidecarDiscoveryResult Failed(string statusEndpoint, string error) =>
+        new(statusEndpoint, new RuntimeSidecarStatusSnapshot(
+            "fetch_failed",
+            null,
+            error,
+            false,
+            "fetch_failed",
+            null,
+            false,
+            0,
+            false,
+            false,
+            error));
 }
