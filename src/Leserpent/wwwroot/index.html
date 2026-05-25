@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>leserpent control plane</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">leserpent</p>
+        <h1>Control Plane Dashboard</h1>
+        <p class="subcopy">A very-light fleet view for many nearby gewyvern runtimes.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="refresh-all" class="primary">Fleet Refresh All</button>
+        <button id="refresh-status">Refresh Status</button>
+        <button id="refresh-capabilities">Refresh Capabilities</button>
+      </div>
+    </header>
+
+    <section class="filters card">
+      <div class="filter-grid">
+        <label>
+          <span>Environment</span>
+          <input id="filter-environment" type="text" placeholder="prod" />
+        </label>
+        <label>
+          <span>Cluster</span>
+          <input id="filter-cluster" type="text" placeholder="alpha" />
+        </label>
+        <label>
+          <span>Role</span>
+          <input id="filter-role" type="text" placeholder="edge" />
+        </label>
+      </div>
+      <div class="filter-actions">
+        <button id="apply-filters">Apply Filters</button>
+        <button id="clear-filters" class="quiet">Clear</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Register Runtime</h2>
+        <span class="chip">very-light intake</span>
+      </div>
+      <form id="register-form" class="register-grid">
+        <label>
+          <span>Name</span>
+          <input id="register-name" type="text" placeholder="gw-prod-edge-01" required />
+        </label>
+        <label>
+          <span>Endpoint</span>
+          <input id="register-endpoint" type="text" placeholder="http://127.0.0.1:9910" required />
+        </label>
+        <label>
+          <span>Pairing Token</span>
+          <input id="register-token" type="text" placeholder="token-123" required />
+        </label>
+        <label>
+          <span>Environment</span>
+          <input id="register-runtime-environment" type="text" placeholder="prod" />
+        </label>
+        <label>
+          <span>Cluster</span>
+          <input id="register-runtime-cluster" type="text" placeholder="alpha" />
+        </label>
+        <label>
+          <span>Role</span>
+          <input id="register-runtime-role" type="text" placeholder="edge" />
+        </label>
+        <label class="checkbox-row">
+          <input id="register-fetch-capabilities" type="checkbox" checked />
+          <span>Fetch capability and latest-meta from gewyvern</span>
+        </label>
+        <div class="register-actions">
+          <button type="submit" class="primary">Register Runtime</button>
+          <button id="register-form-clear" type="button" class="quiet">Clear Form</button>
+        </div>
+      </form>
+      <div id="register-result" class="form-result">No runtime submitted yet.</div>
+    </section>
+
+    <section class="grid two-up">
+      <article class="card">
+        <div class="card-head">
+          <h2>Fleet Summary</h2>
+          <span id="fleet-filter-chip" class="chip">all runtimes</span>
+        </div>
+        <div id="fleet-summary-cards" class="metric-grid"></div>
+        <div id="fleet-summary-groups" class="group-grid"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Attention Summary</h2>
+          <span class="chip attention">triage</span>
+        </div>
+        <div id="attention-summary-cards" class="metric-grid"></div>
+        <div id="attention-reasons" class="stack"></div>
+      </article>
+    </section>
+
+    <section class="grid two-up">
+      <article class="card">
+        <div class="card-head">
+          <h2>Runtimes Needing Attention</h2>
+          <span id="attention-count" class="chip">0 runtimes</span>
+        </div>
+        <div id="attention-list" class="list-stack"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Sessions</h2>
+          <span id="session-count" class="chip">0 sessions</span>
+        </div>
+        <div id="session-list" class="list-stack"></div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Runtimes</h2>
+        <span id="runtime-count" class="chip">0 runtimes</span>
+      </div>
+      <div class="runtime-toolbar">
+        <label class="search-box">
+          <span>Quick Search</span>
+          <input id="runtime-search" type="text" placeholder="name or endpoint" />
+        </label>
+        <label class="search-box">
+          <span>Sort By</span>
+          <select id="runtime-sort">
+            <option value="name">Name</option>
+            <option value="status">Status Source</option>
+            <option value="snapshot">Snapshot Kind</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Tags</th>
+              <th>Status</th>
+              <th>Capability Surface</th>
+              <th>Sidecar</th>
+              <th>Attention</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="runtime-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Runtime Detail</h2>
+        <span id="runtime-detail-chip" class="chip">nothing selected</span>
+      </div>
+      <div id="runtime-detail-actions" class="detail-actions hidden">
+        <button id="runtime-detail-refresh-all" class="primary" type="button">Refresh This Runtime</button>
+        <button id="runtime-detail-refresh-status" type="button">Refresh Status</button>
+        <button id="runtime-detail-refresh-capabilities" type="button">Refresh Capabilities</button>
+        <button id="runtime-detail-copy-link" type="button">Copy Runtime Link</button>
+      </div>
+      <div id="runtime-detail-empty" class="form-result">Select a runtime from the table to inspect its capability, status, and attention state.</div>
+      <div id="runtime-detail-panel" class="detail-grid hidden">
+        <div class="group-card">
+          <div class="group-title">Identity</div>
+          <div id="runtime-detail-identity" class="stack"></div>
+        </div>
+        <div class="group-card">
+          <div class="group-title">Status</div>
+          <div id="runtime-detail-status" class="stack"></div>
+        </div>
+        <div class="group-card">
+          <div class="group-title">Capabilities</div>
+          <div id="runtime-detail-capabilities" class="group-list"></div>
+        </div>
+        <div class="group-card">
+          <div class="group-title">Attention</div>
+          <div id="runtime-detail-attention" class="stack"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span id="status-line">Ready.</span>
+    </footer>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

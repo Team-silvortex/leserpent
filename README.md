@@ -159,3 +159,259 @@ runtime：
 * 不做 verifier
 * 不做 eBPF 编译
 
+---
+
+## 12. 当前代码骨架
+
+当前仓库已经有一个最小 ASP.NET Core control-plane 骨架：
+
+- `src/Leserpent`
+  - standalone Web API service
+  - built-in static dashboard
+  - in-memory runtime registry
+  - capability-aware session creation
+  - session query / stop surface
+
+当前公开路由：
+
+- `GET /health`
+- `GET /v1/capabilities`
+- `GET /v1/fleet/summary`
+- `GET /v1/fleet/attention-summary`
+- `POST /v1/fleet/refresh-all`
+- `POST /v1/fleet/refresh-capabilities`
+- `POST /v1/fleet/refresh-status`
+- `GET /v1/fleet/runtimes-needing-attention`
+- `GET /v1/runtimes`
+- `GET /v1/runtimes/{id}`
+- `GET /v1/runtimes/{id}/attention`
+- `GET /v1/runtimes/{id}/status`
+- `POST /v1/runtimes/register`
+- `POST /v1/runtimes/{id}/refresh-capabilities`
+- `POST /v1/runtimes/{id}/refresh-status`
+- `GET /v1/sessions`
+- `GET /v1/sessions/{id}`
+- `POST /v1/sessions`
+- `POST /v1/sessions/{id}/stop`
+
+当前这层故意保持很轻：
+
+- 现在已经能主动抓取 gewyvern `/v1/capabilities`
+- 还没有真实 gRPC runtime client
+- 还没有 pairing / signing
+- 还没有 RBAC / audit persistence
+- 还没有 UI
+
+它的目标是先把最小控制面 contract 站住：
+
+- leserpent 认识多个 gewyvern runtime
+- leserpent 基于 runtime capability 决定 session 是否允许创建
+- leserpent 读取 runtime latest-meta 来判断当前 snapshot/status
+- risky / unsupported capability 不会被静默放过
+
+### 当前 fleet summary 语义
+
+现在还有一个 very-light 的总览入口：
+
+- `GET /v1/fleet/summary`
+
+它当前聚合这些控制面信号：
+
+- `runtimeCount`
+- `runtimesWithLatestSnapshot`
+- `runtimesWithSummaryJson`
+- `runtimesWithAnalysisJson`
+- `runtimesWithExternalSidecarContext`
+- `runtimesWithExternalEvidenceChainEnrichment`
+- `runtimesWithExternalDiagnosticOpinion`
+- `runtimesWithObservedStatus`
+- `runtimesWithStatusFetchFailed`
+- `snapshotKindCounts`
+- `statusSourceCounts`
+- `environmentCounts`
+- `clusterCounts`
+- `roleCounts`
+
+这样 leserpent 已经能先回答：
+
+- 当前接了多少个 gewyvern runtime
+- 有多少个 runtime 已经有 latest snapshot
+- 有多少个 runtime 已经能给 summary / analysis machine-facing surfaces
+- 有多少个 runtime 当前带 sidecar context
+- 有多少个 runtime 当前已经带 evidence-chain enrichment / diagnostic opinion
+- 有多少个 runtime 当前已经被观测到 status，以及其中多少个 status fetch 已失败
+- latest snapshot 更偏 `single` 还是 `scan`
+- 当前 status source 更偏 `gewyvern-api`、`fetch_failed` 还是 `unobserved`
+- 这些 runtime 分别属于哪些 environment / cluster / role
+
+### 当前 fleet attention 语义
+
+现在还有一个 very-light 的 attention 入口：
+
+- `GET /v1/fleet/runtimes-needing-attention`
+- `GET /v1/fleet/attention-summary`
+
+它当前只列出值得优先下钻的 runtime，并给 very-light reasons，例如：
+
+- `status_fetch_failed`
+- `no_latest_snapshot`
+- `no_analysis_json`
+
+同时还会给 very-light 的 `severity`：
+
+- `critical`
+  - 当前主要表示 status fetch 已失败
+- `warning`
+  - 当前主要表示还没观测到 latest snapshot / analysis 面
+
+`attention-summary` 则会继续把这一层 very-light 地聚成：
+
+- `criticalCount`
+- `warningCount`
+- `reasonCounts`
+
+### 当前 single-runtime attention 语义
+
+单个 runtime 现在也有一个对称的 very-light 入口：
+
+- `GET /v1/runtimes/{id}/attention`
+
+它会返回：
+
+- `needsAttention`
+- `severity`
+- `reasons`
+
+健康节点当前会落成：
+
+- `needsAttention: false`
+- `severity: "none"`
+- `reasons: []`
+
+### 当前 fleet refresh 语义
+
+现在还有一个 very-light 的批量状态刷新入口：
+
+- `POST /v1/fleet/refresh-all`
+- `POST /v1/fleet/refresh-capabilities`
+- `POST /v1/fleet/refresh-status`
+
+它们会对当前过滤范围内的已注册 runtime 逐个拉取：
+
+- `gewyvern /v1/capabilities`
+- `gewyvern /v1/latest/meta`
+
+并分别返回：
+
+- all refresh:
+  - `refreshedCount`
+  - `runtimes[]`
+- capability refresh:
+  - `refreshedCount`
+  - `runtimes[]`
+- status refresh:
+  - `refreshedCount`
+  - `runtimes[]`
+
+它们也都支持和其他 fleet 入口一致的 filtering：
+
+- `?environment=...`
+- `?cluster=...`
+- `?role=...`
+
+它也支持和 runtime list / fleet summary 一样的：
+
+- `?environment=...`
+- `?cluster=...`
+- `?role=...`
+
+这个总览入口现在也支持 very-light filtering：
+
+- `?environment=prod`
+- `?cluster=alpha`
+- `?role=edge`
+- 也可以组合使用，例如：
+  - `?environment=prod&cluster=alpha`
+
+### 当前 runtime tagging 语义
+
+`POST /v1/runtimes/register` 现在支持 very-light 的 runtime tags：
+
+- `environment`
+- `cluster`
+- `role`
+
+这些 tags 只用于：
+
+- fleet 可视化
+- grouping
+- operator filtering 前置语义
+
+目前还**不**代表真正的调度策略，也不会改变 capability gating 逻辑。
+
+### 当前 runtime filtering 语义
+
+`GET /v1/runtimes` 现在支持按 tags 做 very-light filtering：
+
+- `?environment=prod`
+- `?cluster=alpha`
+- `?role=edge`
+- 也可以组合使用，例如：
+  - `?environment=prod&cluster=alpha`
+
+这层 filtering 只是 control-plane 视角下的 runtime 浏览与分组，不代表真正的 placement / scheduling policy。
+
+### 本地运行
+
+```bash
+cd /Users/Shared/chroot/dev/leserpent/src/Leserpent
+dotnet run
+```
+
+启动后：
+
+- dashboard:
+  - `/`
+- control-plane API:
+  - `/v1/...`
+
+当前 dashboard 已经支持：
+
+- very-light runtime registration
+- fleet summary / attention summary
+- runtime list / attention list
+- fleet refresh actions
+- single-runtime detail inspection
+- single-runtime refresh actions
+
+### 当前 runtime discovery 语义
+
+`POST /v1/runtimes/register` 现在支持两种模式：
+
+- 手工注册 capability
+- `fetchCapabilities=true` 时主动抓取 `gewyvern /v1/capabilities`
+
+抓取成功后，leserpent 会把 gewyvern 的轻量 API surface 归一化成控制面可读的 capability，例如：
+
+- `api.latest_snapshot`
+- `api.target_routing`
+- `api.analysis_json`
+- `api.summary_json`
+- `api.report_html`
+- `api.external_sidecar_context`
+- `runtime.serve_required`
+
+这意味着现在 leserpent 已经开始真的依赖 runtime 权威，而不是只相信人工录入。
+
+### 当前 runtime status 语义
+
+除了 capability 抓取，leserpent 现在还会读取 `gewyvern /v1/latest/meta`，并缓存 very-light runtime status：
+
+- `hasLatestSnapshot`
+- `snapshotKind`
+- `targetCount`
+- `hasSummaryJson`
+- `hasAnalysisJson`
+- `hasExternalSidecarContext`
+- `hasExternalEvidenceChainEnrichment`
+- `hasExternalDiagnosticOpinion`
