@@ -439,6 +439,7 @@ dotnet run
 - runtime list / attention list
 - per-runtime child panel with embedded gewyvern views
 - optional paired `etragon` sidecar child views
+- runtime/sidecar source switch shell inside the child panel
 - child-panel view state persisted in URL
 - fleet refresh actions
 - single-runtime detail inspection

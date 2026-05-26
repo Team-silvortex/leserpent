@@ -1,15 +1,14 @@
 {
   "SchemaVersion": 1,
-  "SavedAt": "2026-05-26T10:07:08.038423+00:00",
+  "SavedAt": "2026-05-25T08:56:39.536717+00:00",
   "Runtimes": [
     {
       "RuntimeId": "7964f46cf33d48adb055ec17f5acbcdf",
       "Name": "gw-persist",
       "Endpoint": "http://127.0.0.1:9910",
-      "SidecarEndpoint": null,
       "PairingToken": "token-1",
       "RegisteredAt": "2026-05-25T08:38:58.677648+00:00",
-      "UpdatedAt": "2026-05-26T10:07:08.037178+00:00",
+      "UpdatedAt": "2026-05-25T08:38:58.677648+00:00",
       "Capabilities": [],
       "CapabilitySource": "manual",
       "CapabilityFetchedAt": null,
@@ -20,9 +19,9 @@
         "Role": null
       },
       "Status": {
-        "StatusSource": "fetch_failed",
+        "StatusSource": "unobserved",
         "StatusFetchedAt": null,
-        "StatusFetchError": "Connection refused (127.0.0.1:9910)",
+        "StatusFetchError": null,
         "HasLatestSnapshot": false,
         "SnapshotKind": null,
         "TargetCount": null,
@@ -31,8 +30,7 @@
         "HasExternalSidecarContext": false,
         "HasExternalEvidenceChainEnrichment": false,
         "HasExternalDiagnosticOpinion": false
-      },
-      "SidecarStatus": null
+      }
     }
   ],
   "Sessions": []

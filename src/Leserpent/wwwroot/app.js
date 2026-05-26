@@ -47,6 +47,12 @@ const translations = {
     },
     runtimes: {
       title: "Runtimes",
+      workspaceTabs: {
+        select: "Select",
+        register: "Register",
+        detail: "Detail",
+        panel: "Child Panel",
+      },
       quickSearch: "Quick Search",
       quickSearchPlaceholder: "name or endpoint",
       sortBy: "Sort By",
@@ -112,10 +118,21 @@ const translations = {
       title: "Runtime Child Panel",
       notReady: "no runtime selected",
       empty: "Select a runtime to load its child control panel.",
+      blankRuntimeTitle: "This runtime panel is not ready yet",
+      blankRuntimeBody: "We know where this runtime lives, but it has not published panel-ready data yet. Use the control-plane summary above as your source of truth first.",
+      blankSidecarTitle: "This sidecar panel is not ready yet",
+      blankSidecarBody: "The paired diagnostic sidecar is configured, but it has not produced a panel-ready status snapshot yet. Start with the control-plane view, then refresh when needed.",
+      blankFetchFailedTitle: "We could not safely open this panel yet",
+      blankFetchFailedBody: "The latest status refresh failed, so showing the raw endpoint would be more confusing than helpful right now. Refresh first, then try again.",
+      blankHintRefreshRuntime: "Try refreshing runtime status first.",
+      blankHintRefreshSidecar: "Try refreshing sidecar status first.",
+      blankHintEndpoint: "endpoint",
       breadcrumbFleet: "runtime panel",
+      breadcrumbSource: "source",
       breadcrumbView: "view",
       currentView: "current view",
       sourceUrl: "source url",
+      sourceStatus: "source status",
       trustTitle: "runtime trust",
       trustObserved: "Observed runtime state",
       trustObservedMessage: "This child panel is backed by an observed gewyvern snapshot and is generally safe to read as live runtime context.",
@@ -135,6 +152,10 @@ const translations = {
       trustRefreshStatus: "Refresh Status Now",
       trustRefreshSidecar: "Refresh Sidecar Now",
       openExternal: "Open in New Tab",
+      sources: {
+        runtime: "Runtime",
+        sidecar: "Sidecar",
+      },
       views: {
         root: "Home",
         health: "Health",
@@ -292,6 +313,7 @@ const translations = {
       fleetCapabilityRefresh: "Fleet capability refresh",
       fleetRefreshComplete: "{label} complete.",
       fleetRefreshFailed: "{label} failed: {message}",
+      badgeUpdated: "updated",
     },
   },
   "zh-CN": {
@@ -342,6 +364,12 @@ const translations = {
     },
     runtimes: {
       title: "Runtimes",
+      workspaceTabs: {
+        select: "选取",
+        register: "注册",
+        detail: "详情",
+        panel: "子面板",
+      },
       quickSearch: "快速搜索",
       quickSearchPlaceholder: "名称或 endpoint",
       sortBy: "排序方式",
@@ -407,10 +435,21 @@ const translations = {
       title: "Runtime 子面板",
       notReady: "尚未选择 runtime",
       empty: "选择一个 runtime 后，就能加载它的子控制页面。",
+      blankRuntimeTitle: "这个 runtime 面板还没准备好",
+      blankRuntimeBody: "我们已经知道这台 runtime 在哪，但它还没有发布适合直接展示的面板数据。现在先把上面的控制平面摘要当作准绳更合适。",
+      blankSidecarTitle: "这个 sidecar 面板还没准备好",
+      blankSidecarBody: "配对的诊断 sidecar 已经配置好了，但还没有产出可稳定展示的状态快照。现在先看控制平面视图，再按需刷新。",
+      blankFetchFailedTitle: "这个面板暂时不适合直接打开",
+      blankFetchFailedBody: "最近一次状态刷新失败了，这时直接展示原始 endpoint 往往比帮助更容易误导。先刷新，再回来查看会更稳。",
+      blankHintRefreshRuntime: "先刷新一下 runtime 状态。",
+      blankHintRefreshSidecar: "先刷新一下 sidecar 状态。",
+      blankHintEndpoint: "endpoint",
       breadcrumbFleet: "runtime 面板",
+      breadcrumbSource: "来源",
       breadcrumbView: "当前视图",
       currentView: "当前视图",
       sourceUrl: "来源地址",
+      sourceStatus: "来源状态",
       trustTitle: "可信度提示",
       trustObserved: "已观测到 runtime 状态",
       trustObservedMessage: "这块子面板背后已经有可用的 gewyvern latest snapshot，一般可以把它当成实时 runtime 上下文来读。",
@@ -430,6 +469,10 @@ const translations = {
       trustRefreshStatus: "立即刷新状态",
       trustRefreshSidecar: "立即刷新 Sidecar",
       openExternal: "新标签打开",
+      sources: {
+        runtime: "Runtime",
+        sidecar: "Sidecar",
+      },
       views: {
         root: "主页",
         health: "健康",
@@ -587,6 +630,7 @@ const translations = {
       fleetCapabilityRefresh: "整组能力刷新",
       fleetRefreshComplete: "{label} 完成。",
       fleetRefreshFailed: "{label} 失败：{message}",
+      badgeUpdated: "已更新",
     },
   },
 };
@@ -600,10 +644,18 @@ const state = {
   languagePreference: "auto",
   language: "en",
   activeTab: "overview",
+  activeOverviewTab: "summary",
+  activeRuntimeMainTab: "select",
+  activeRuntimeSideTab: "detail",
+  activeRuntimeDetailTab: "identity",
   runtimePanelView: "root",
   runtimeSearch: "",
   runtimeSort: "name",
   selectedRuntimeId: null,
+  recentBadgeRefresh: {
+    runtime: null,
+    sidecar: null,
+  },
   latestRuntimes: [],
   registerNameTouched: false,
   cache: {
@@ -638,6 +690,9 @@ const nodes = {
   attentionCount: document.getElementById("attention-count"),
   sessionCount: document.getElementById("session-count"),
   runtimeCount: document.getElementById("runtime-count"),
+  runtimeWorkspace: document.getElementById("runtime-workspace"),
+  runtimeMainTabButtons: Array.from(document.querySelectorAll(".runtime-main-tab-button")),
+  runtimeMainPanels: Array.from(document.querySelectorAll(".runtime-main-panel")),
   runtimeSearch: document.getElementById("runtime-search"),
   runtimeSort: document.getElementById("runtime-sort"),
   runtimeDetailChip: document.getElementById("runtime-detail-chip"),
@@ -653,12 +708,18 @@ const nodes = {
   runtimeDetailRefreshCapabilities: document.getElementById("runtime-detail-refresh-capabilities"),
   runtimeDetailRefreshSidecar: document.getElementById("runtime-detail-refresh-sidecar"),
   runtimeDetailCopyLink: document.getElementById("runtime-detail-copy-link"),
+  runtimeDetailSubtabButtons: Array.from(document.querySelectorAll(".runtime-detail-subtab-button")),
+  runtimeDetailSections: Array.from(document.querySelectorAll(".runtime-detail-section")),
   runtimePanelChip: document.getElementById("runtime-panel-chip"),
   runtimePanelBreadcrumb: document.getElementById("runtime-panel-breadcrumb"),
   runtimePanelTrust: document.getElementById("runtime-panel-trust"),
+  runtimePanelSourceSwitch: document.getElementById("runtime-panel-source-switch"),
+  runtimePanelSourceButtons: Array.from(document.querySelectorAll(".runtime-panel-source-button")),
+  runtimePanelSourceBadges: document.getElementById("runtime-panel-source-badges"),
   runtimePanelActions: document.getElementById("runtime-panel-actions"),
   runtimePanelEmpty: document.getElementById("runtime-panel-empty"),
   runtimePanelFrameWrap: document.getElementById("runtime-panel-frame-wrap"),
+  runtimePanelBlank: document.getElementById("runtime-panel-blank"),
   runtimePanelFrame: document.getElementById("runtime-panel-frame"),
   runtimePanelUrl: document.getElementById("runtime-panel-url"),
   runtimePanelTabs: Array.from(document.querySelectorAll(".runtime-panel-tab")),
@@ -687,6 +748,8 @@ const nodes = {
   languageSelect: document.getElementById("language-select"),
   tabButtons: Array.from(document.querySelectorAll(".tab-button")),
   tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
+  overviewSubtabButtons: Array.from(document.querySelectorAll(".overview-subtab-button")),
+  overviewSubpanels: Array.from(document.querySelectorAll(".overview-subpanel")),
 };
 
 function t(key, params = {}) {
@@ -739,6 +802,9 @@ function buildQuery() {
   const params = new URLSearchParams();
   if (state.languagePreference && state.languagePreference !== "auto") params.set("lang", state.languagePreference);
   if (state.activeTab && state.activeTab !== "overview") params.set("tab", state.activeTab);
+  if (state.activeOverviewTab && state.activeOverviewTab !== "summary") params.set("overview", state.activeOverviewTab);
+  if (state.activeRuntimeMainTab && state.activeRuntimeMainTab !== "select") params.set("runtimePane", state.activeRuntimeMainTab);
+  if (state.activeRuntimeDetailTab && state.activeRuntimeDetailTab !== "identity") params.set("runtimeDetail", state.activeRuntimeDetailTab);
   if (state.runtimePanelView && state.runtimePanelView !== "root") params.set("runtimeView", state.runtimePanelView);
   if (state.filter.environment) params.set("environment", state.filter.environment);
   if (state.filter.cluster) params.set("cluster", state.filter.cluster);
@@ -760,6 +826,19 @@ function hydrateStateFromLocation() {
         "auto";
   state.language = resolveLanguage(state.languagePreference);
   state.activeTab = params.get("tab") || "overview";
+  if (state.activeTab === "register") {
+    state.activeTab = "runtimes";
+    state.activeRuntimeMainTab = "register";
+  }
+  state.activeOverviewTab = params.get("overview") || "summary";
+  state.activeRuntimeMainTab =
+    state.activeRuntimeMainTab ||
+    params.get("runtimePane") ||
+    params.get("runtimeMode") ||
+    params.get("runtimeSide") ||
+    "select";
+  state.activeRuntimeSideTab = state.activeRuntimeMainTab === "panel" ? "panel" : "detail";
+  state.activeRuntimeDetailTab = params.get("runtimeDetail") || "identity";
   state.runtimePanelView = params.get("runtimeView") || "root";
   state.filter.environment = params.get("environment") || "";
   state.filter.cluster = params.get("cluster") || "";
@@ -815,10 +894,123 @@ function applyTabShell() {
   for (const panel of nodes.tabPanels) {
     panel.classList.toggle("active", panel.dataset.tabPanel === state.activeTab);
   }
+  for (const button of nodes.runtimeMainTabButtons) {
+    button.classList.toggle("active", button.dataset.runtimeMainTab === state.activeRuntimeMainTab);
+  }
+  for (const panel of nodes.runtimeMainPanels) {
+    const isActive = panel.dataset.runtimeMainPanel === state.activeRuntimeMainTab;
+    panel.classList.toggle("active", isActive);
+    panel.hidden = !isActive;
+  }
+  for (const button of nodes.overviewSubtabButtons) {
+    button.classList.toggle("active", button.dataset.overviewTab === state.activeOverviewTab);
+  }
+  for (const panel of nodes.overviewSubpanels) {
+    panel.classList.toggle("active", panel.dataset.overviewPanel === state.activeOverviewTab);
+  }
+  if (nodes.runtimeWorkspace) {
+    nodes.runtimeWorkspace.classList.toggle("register-focus", state.activeRuntimeMainTab === "register");
+    nodes.runtimeWorkspace.classList.toggle("panel-focus", state.activeRuntimeMainTab === "panel");
+    nodes.runtimeWorkspace.classList.toggle("detail-focus", state.activeRuntimeMainTab === "detail");
+    nodes.runtimeWorkspace.dataset.mainTab = state.activeRuntimeMainTab;
+  }
+  for (const button of nodes.runtimeDetailSubtabButtons) {
+    button.classList.toggle("active", button.dataset.runtimeDetailTab === state.activeRuntimeDetailTab);
+  }
+  for (const panel of nodes.runtimeDetailSections) {
+    panel.classList.toggle("active", panel.dataset.runtimeDetailPanel === state.activeRuntimeDetailTab);
+  }
 }
 
 function isSidecarView(view = state.runtimePanelView) {
   return typeof view === "string" && view.startsWith("sidecar-");
+}
+
+function runtimePanelSource(view = state.runtimePanelView) {
+  return isSidecarView(view) ? "sidecar" : "runtime";
+}
+
+function shouldRenderRuntimePanelBlank(runtime, trust, view = state.runtimePanelView) {
+  const source = runtimePanelSource(view);
+  if (source === "sidecar") {
+    return !runtime.sidecarEndpoint || runtime.sidecarStatus?.statusSource === "fetch_failed" || runtime.sidecarStatus?.statusSource === "unobserved";
+  }
+
+  return runtime.status.statusSource === "fetch_failed"
+    || runtime.status.statusSource === "unobserved"
+    || !runtime.status.hasLatestSnapshot
+    || runtime.status.snapshotKind === "none";
+}
+
+function renderRuntimePanelBlank(runtime, trust, url, view = state.runtimePanelView) {
+  const source = runtimePanelSource(view);
+  const isFetchFailed = trust.source === "fetch_failed";
+  const title = isFetchFailed
+    ? t("runtimePanel.blankFetchFailedTitle")
+    : source === "sidecar"
+      ? t("runtimePanel.blankSidecarTitle")
+      : t("runtimePanel.blankRuntimeTitle");
+  const body = isFetchFailed
+    ? t("runtimePanel.blankFetchFailedBody")
+    : source === "sidecar"
+      ? t("runtimePanel.blankSidecarBody")
+      : t("runtimePanel.blankRuntimeBody");
+  const hint = source === "sidecar"
+    ? t("runtimePanel.blankHintRefreshSidecar")
+    : t("runtimePanel.blankHintRefreshRuntime");
+
+  nodes.runtimePanelBlank.classList.remove("hidden");
+  nodes.runtimePanelBlank.innerHTML = `
+    <div class="runtime-panel-blank-illustration" aria-hidden="true">···</div>
+    <div class="runtime-panel-blank-copy">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(body)}</p>
+      <div class="runtime-panel-blank-hints">
+        <span class="tag-pill">${escapeHtml(hint)}</span>
+        <span class="item-meta">${escapeHtml(t("runtimePanel.blankHintEndpoint"))}: ${escapeHtml(url)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function defaultRuntimePanelViewForSource(source) {
+  return source === "sidecar" ? "sidecar-root" : "root";
+}
+
+function markBadgeRefresh(kind) {
+  if (kind !== "runtime" && kind !== "sidecar") {
+    return;
+  }
+  state.recentBadgeRefresh[kind] = Date.now();
+}
+
+function badgeRecentlyUpdated(kind) {
+  const value = state.recentBadgeRefresh[kind];
+  return typeof value === "number" && Date.now() - value < 2400;
+}
+
+function switchRuntimePanelSource(source, runtime) {
+  if (source === "sidecar" && !runtime?.sidecarEndpoint) {
+    return;
+  }
+
+  state.runtimePanelView = defaultRuntimePanelViewForSource(source);
+  renderRuntimePanel(runtime);
+  syncLocation();
+}
+
+function runtimeSourceBadge(status) {
+  if (!status || status.statusSource === "fetch_failed") {
+    return { tone: "bad", text: t("statuses.fetchFailed"), refreshKind: "status" };
+  }
+  if (!status.hasLatestSnapshot) {
+    return { tone: "warn", text: t("statuses.unobserved"), refreshKind: "status" };
+  }
+  return {
+    tone: "good",
+    text: t("statuses.observedSnapshot", { kind: status.snapshotKind || t("statuses.observed") }),
+    refreshKind: null,
+  };
 }
 
 function runtimePanelUrl(runtime, view = state.runtimePanelView) {
@@ -1139,18 +1331,18 @@ function statusBadge(status) {
 
 function sidecarStatusBadge(sidecarStatus) {
   if (!sidecarStatus) {
-    return { text: t("register.sidecarUnpaired"), tone: "warn" };
+    return { text: t("register.sidecarUnpaired"), tone: "warn", refreshKind: null };
   }
   if (sidecarStatus.statusSource === "fetch_failed") {
-    return { text: t("statuses.sidecarFetchFailed"), tone: "bad" };
+    return { text: t("statuses.sidecarFetchFailed"), tone: "bad", refreshKind: "sidecar" };
   }
   if (sidecarStatus.daemonStatus === "starting") {
-    return { text: t("statuses.sidecarStarting"), tone: "warn" };
+    return { text: t("statuses.sidecarStarting"), tone: "warn", refreshKind: "sidecar" };
   }
   if (sidecarStatus.daemonStatus === "degraded") {
-    return { text: t("statuses.sidecarDegraded"), tone: "warn" };
+    return { text: t("statuses.sidecarDegraded"), tone: "warn", refreshKind: "sidecar" };
   }
-  return { text: t("statuses.sidecarObserved"), tone: "good" };
+  return { text: t("statuses.sidecarObserved"), tone: "good", refreshKind: null };
 }
 
 function runtimeStatusHint(status) {
@@ -1363,6 +1555,7 @@ function renderRuntimes(payload, attentionMap) {
       const runtimeId = button.dataset.runtimeId;
       if (button.dataset.action === "show-attention") {
         state.activeTab = "runtimes";
+        state.activeRuntimeMainTab = "detail";
         state.selectedRuntimeId = runtimeId;
         applyTabShell();
         renderRuntimes(payload, attentionMap);
@@ -1461,9 +1654,14 @@ function renderRuntimePanel(runtime) {
     nodes.runtimePanelBreadcrumb.classList.add("hidden");
     nodes.runtimePanelTrust.className = "runtime-panel-trust hidden";
     nodes.runtimePanelTrust.innerHTML = "";
+    nodes.runtimePanelSourceSwitch.classList.add("hidden");
+    nodes.runtimePanelSourceBadges.classList.add("hidden");
+    nodes.runtimePanelSourceBadges.innerHTML = "";
     nodes.runtimePanelActions.classList.add("hidden");
     nodes.runtimePanelEmpty.classList.remove("hidden");
     nodes.runtimePanelFrameWrap.classList.add("hidden");
+    nodes.runtimePanelBlank.classList.add("hidden");
+    nodes.runtimePanelBlank.innerHTML = "";
     nodes.runtimePanelFrame.src = "about:blank";
     nodes.runtimePanelUrl.textContent = "";
     nodes.runtimePanelOpenExternal.removeAttribute("href");
@@ -1473,12 +1671,19 @@ function renderRuntimePanel(runtime) {
   const url = runtimePanelUrl(runtime);
   const viewLabel = t(`runtimePanel.views.${state.runtimePanelView}`);
   const trust = runtimePanelTrustState(runtime, state.runtimePanelView);
+  const source = runtimePanelSource(state.runtimePanelView);
+  const sourceLabel = t(`runtimePanel.sources.${source}`);
+  const runtimeBadge = runtimeSourceBadge(runtime.status);
+  const sidecarBadge = sidecarStatusBadge(runtime.sidecarStatus);
 
   nodes.runtimePanelChip.textContent = runtime.name;
   nodes.runtimePanelBreadcrumb.classList.remove("hidden");
   nodes.runtimePanelBreadcrumb.innerHTML = `
     <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbFleet"))}</span>
     <span class="crumb-value">${escapeHtml(runtime.name)}</span>
+    <span class="crumb-sep">/</span>
+    <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbSource"))}</span>
+    <span class="crumb-value">${escapeHtml(sourceLabel)}</span>
     <span class="crumb-sep">/</span>
     <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbView"))}</span>
     <span class="crumb-value">${escapeHtml(viewLabel)}</span>
@@ -1488,12 +1693,12 @@ function renderRuntimePanel(runtime) {
     <div class="runtime-panel-trust-head">
       <span class="runtime-panel-trust-title">${escapeHtml(t("runtimePanel.trustTitle"))}</span>
       <span class="runtime-state ${escapeHtml(trust.tone)}">${escapeHtml(trust.label)}</span>
+      <span class="runtime-panel-trust-message">${escapeHtml(trust.message)}</span>
+      ${trust.refreshKind
+        ? `<button type="button" class="runtime-panel-trust-inline-action" data-runtime-panel-refresh="${escapeHtml(trust.refreshKind)}">${escapeHtml(trust.refreshKind === "sidecar" ? t("runtimePanel.trustRefreshSidecar") : t("runtimePanel.trustRefreshStatus"))}</button>`
+        : ""}
     </div>
-    <div class="runtime-panel-trust-message">${escapeHtml(trust.message)}</div>
     <div class="runtime-panel-trust-meta">${escapeHtml(t("runtimePanel.trustMeta", { source: trust.source, snapshot: trust.snapshot }))}</div>
-    ${trust.refreshKind
-      ? `<div class="runtime-panel-trust-action"><button type="button" data-runtime-panel-refresh="${escapeHtml(trust.refreshKind)}">${escapeHtml(trust.refreshKind === "sidecar" ? t("runtimePanel.trustRefreshSidecar") : t("runtimePanel.trustRefreshStatus"))}</button></div>`
-      : ""}
   `;
   const trustRefreshButton = nodes.runtimePanelTrust.querySelector("[data-runtime-panel-refresh]");
   if (trustRefreshButton) {
@@ -1501,27 +1706,66 @@ function renderRuntimePanel(runtime) {
       await refreshRuntimeById(runtime.runtimeId, trustRefreshButton.dataset.runtimePanelRefresh);
     });
   }
+  nodes.runtimePanelSourceSwitch.classList.add("hidden");
+  nodes.runtimePanelSourceBadges.classList.remove("hidden");
+  nodes.runtimePanelSourceBadges.innerHTML = `
+    <button type="button" class="runtime-panel-source-badge ${source === "runtime" ? "is-active" : ""}" data-runtime-panel-badge-source="runtime">
+      <strong>${escapeHtml(t("runtimePanel.sources.runtime"))}</strong>
+      <span class="runtime-state ${escapeHtml(runtimeBadge.tone)}">${escapeHtml(runtimeBadge.text)}</span>
+      ${badgeRecentlyUpdated("runtime") ? `<span class="chip">${escapeHtml(t("notifications.badgeUpdated"))}</span>` : ""}
+      ${runtimeBadge.refreshKind ? `<span class="chip">${escapeHtml(t("runtimePanel.trustRefreshStatus"))}</span>` : ""}
+    </button>
+    <button type="button" class="runtime-panel-source-badge ${source === "sidecar" ? "is-active" : ""}" data-runtime-panel-badge-source="sidecar" ${runtime.sidecarEndpoint ? "" : "disabled"}>
+      <strong>${escapeHtml(t("runtimePanel.sources.sidecar"))}</strong>
+      <span class="runtime-state ${escapeHtml(sidecarBadge.tone)}">${escapeHtml(sidecarBadge.text)}</span>
+      ${badgeRecentlyUpdated("sidecar") ? `<span class="chip">${escapeHtml(t("notifications.badgeUpdated"))}</span>` : ""}
+      ${sidecarBadge.refreshKind ? `<span class="chip">${escapeHtml(t("runtimePanel.trustRefreshSidecar"))}</span>` : ""}
+    </button>
+  `;
+  for (const badge of nodes.runtimePanelSourceBadges.querySelectorAll("[data-runtime-panel-badge-source]")) {
+    badge.addEventListener("click", async () => {
+      const badgeSource = badge.dataset.runtimePanelBadgeSource;
+      const refreshKind = badgeSource === "runtime" ? runtimeBadge.refreshKind : sidecarBadge.refreshKind;
+      if (refreshKind) {
+        await refreshRuntimeById(runtime.runtimeId, refreshKind);
+        return;
+      }
+      switchRuntimePanelSource(badgeSource, runtime);
+    });
+  }
   nodes.runtimePanelActions.classList.remove("hidden");
   for (const tab of nodes.runtimePanelTabs) {
     const wantsSidecar = isSidecarView(tab.dataset.runtimePanelView);
     tab.disabled = wantsSidecar && !runtime.sidecarEndpoint;
+    tab.classList.toggle("hidden", tab.dataset.runtimePanelSource !== source);
   }
   const sidecarViewWithoutEndpoint = isSidecarView(state.runtimePanelView) && !runtime.sidecarEndpoint;
   nodes.runtimePanelEmpty.classList.toggle("hidden", !sidecarViewWithoutEndpoint);
   nodes.runtimePanelFrameWrap.classList.toggle("hidden", sidecarViewWithoutEndpoint);
   if (sidecarViewWithoutEndpoint) {
     nodes.runtimePanelEmpty.textContent = t("runtimePanel.trustNoSidecarMessage");
+    nodes.runtimePanelBlank.classList.add("hidden");
+    nodes.runtimePanelBlank.innerHTML = "";
     nodes.runtimePanelFrame.src = "about:blank";
     nodes.runtimePanelUrl.textContent = "";
     nodes.runtimePanelOpenExternal.removeAttribute("href");
     return;
   }
   nodes.runtimePanelUrl.textContent = `${t("runtimePanel.sourceUrl")}: ${url}`;
-  nodes.runtimePanelFrame.src = url;
+  const useBlankShell = shouldRenderRuntimePanelBlank(runtime, trust, state.runtimePanelView);
+  if (useBlankShell) {
+    renderRuntimePanelBlank(runtime, trust, url, state.runtimePanelView);
+    nodes.runtimePanelFrame.classList.add("hidden");
+    nodes.runtimePanelFrame.src = "about:blank";
+  } else {
+    nodes.runtimePanelBlank.classList.add("hidden");
+    nodes.runtimePanelBlank.innerHTML = "";
+    nodes.runtimePanelFrame.classList.remove("hidden");
+    nodes.runtimePanelFrame.src = url;
+  }
   nodes.runtimePanelOpenExternal.href = url;
   nodes.runtimePanelOpenExternal.target = "_blank";
   nodes.runtimePanelOpenExternal.rel = "noreferrer";
-
   for (const tab of nodes.runtimePanelTabs) {
     tab.classList.toggle("is-active", tab.dataset.runtimePanelView === state.runtimePanelView);
   }
@@ -1543,11 +1787,15 @@ async function refreshRuntimeById(runtimeId, kind) {
       const selectedRuntime = state.latestRuntimes.find((runtime) => runtime.runtimeId === runtimeId) || null;
       if (selectedRuntime?.sidecarEndpoint) {
         await postJson(`/v1/runtimes/${runtimeId}/refresh-sidecar`);
+        markBadgeRefresh("sidecar");
       }
+      markBadgeRefresh("runtime");
     } else if (kind === "status") {
       await postJson(`/v1/runtimes/${runtimeId}/refresh-status`);
+      markBadgeRefresh("runtime");
     } else if (kind === "sidecar") {
       await postJson(`/v1/runtimes/${runtimeId}/refresh-sidecar`);
+      markBadgeRefresh("sidecar");
     } else {
       await postJson(`/v1/runtimes/${runtimeId}/refresh-capabilities`);
     }
@@ -1555,6 +1803,16 @@ async function refreshRuntimeById(runtimeId, kind) {
     state.activeTab = "runtimes";
     state.selectedRuntimeId = runtimeId;
     await loadDashboard();
+    const selectedRuntime = state.latestRuntimes.find((runtime) => runtime.runtimeId === runtimeId) || null;
+    if (selectedRuntime) {
+      renderRuntimePanel(selectedRuntime);
+      window.setTimeout(() => {
+        const latestSelected = state.latestRuntimes.find((runtime) => runtime.runtimeId === state.selectedRuntimeId) || null;
+        if (latestSelected) {
+          renderRuntimePanel(latestSelected);
+        }
+      }, 2500);
+    }
     nodes.statusLine.textContent = t("notifications.runtimeRefreshComplete", { label });
   } catch (error) {
     console.error(error);
@@ -1794,14 +2052,16 @@ async function submitRegisterForm(event) {
   const sidecarEndpoint = nodes.registerSidecarEndpoint.value.trim();
   if (!isLikelyHttpEndpoint(endpoint)) {
     nodes.registerResult.textContent = t("register.blockedEndpoint");
-    state.activeTab = "register";
+    state.activeTab = "runtimes";
+    state.activeRuntimeMainTab = "register";
     applyTabShell();
     return;
   }
 
   if (sidecarEndpoint && !isLikelyHttpEndpoint(sidecarEndpoint)) {
     nodes.registerResult.textContent = t("register.blockedSidecarEndpoint");
-    state.activeTab = "register";
+    state.activeTab = "runtimes";
+    state.activeRuntimeMainTab = "register";
     applyTabShell();
     return;
   }
@@ -1820,7 +2080,8 @@ async function submitRegisterForm(event) {
       name: duplicate.name,
       endpoint: duplicate.endpoint,
     });
-    state.activeTab = "register";
+    state.activeTab = "runtimes";
+    state.activeRuntimeMainTab = "register";
     applyTabShell();
     return;
   }
@@ -1844,6 +2105,7 @@ async function submitRegisterForm(event) {
     const result = await postJsonBody("/v1/runtimes/register", body);
     state.registerNameTouched = false;
     state.activeTab = "runtimes";
+    state.activeRuntimeMainTab = "detail";
     state.selectedRuntimeId = result.runtimeId;
     nodes.registerResult.textContent = t("register.registered", {
       name: result.name,
@@ -1856,7 +2118,8 @@ async function submitRegisterForm(event) {
   } catch (error) {
     console.error(error);
     nodes.registerResult.textContent = t("register.failed", { message: error.message });
-    state.activeTab = "register";
+    state.activeTab = "runtimes";
+    state.activeRuntimeMainTab = "register";
     applyTabShell();
   }
 }
@@ -1867,8 +2130,40 @@ function activateTab(tab) {
   syncLocation();
 }
 
+function activateOverviewSubtab(tab) {
+  state.activeOverviewTab = tab;
+  applyTabShell();
+  syncLocation();
+}
+
+function activateRuntimeMainTab(tab) {
+  state.activeRuntimeMainTab = ["register", "detail", "panel"].includes(tab) ? tab : "select";
+  state.activeRuntimeSideTab = state.activeRuntimeMainTab === "panel" ? "panel" : "detail";
+  state.activeTab = "runtimes";
+  applyTabShell();
+  syncLocation();
+}
+
+function activateRuntimeDetailTab(tab) {
+  state.activeRuntimeDetailTab = tab;
+  applyTabShell();
+  syncLocation();
+}
+
 nodes.tabButtons.forEach((button) => {
   button.addEventListener("click", () => activateTab(button.dataset.tab));
+});
+
+nodes.overviewSubtabButtons.forEach((button) => {
+  button.addEventListener("click", () => activateOverviewSubtab(button.dataset.overviewTab));
+});
+
+nodes.runtimeMainTabButtons.forEach((button) => {
+  button.addEventListener("click", () => activateRuntimeMainTab(button.dataset.runtimeMainTab));
+});
+
+nodes.runtimeDetailSubtabButtons.forEach((button) => {
+  button.addEventListener("click", () => activateRuntimeDetailTab(button.dataset.runtimeDetailTab));
 });
 
 nodes.runtimePanelTabs.forEach((button) => {
@@ -1877,6 +2172,13 @@ nodes.runtimePanelTabs.forEach((button) => {
     const selectedRuntime = state.latestRuntimes.find((runtime) => runtime.runtimeId === state.selectedRuntimeId) || null;
     renderRuntimePanel(selectedRuntime);
     syncLocation();
+  });
+});
+
+nodes.runtimePanelSourceButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const selectedRuntime = state.latestRuntimes.find((runtime) => runtime.runtimeId === state.selectedRuntimeId) || null;
+    switchRuntimePanelSource(button.dataset.runtimePanelSource, selectedRuntime);
   });
 });
 
