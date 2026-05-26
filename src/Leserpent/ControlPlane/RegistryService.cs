@@ -361,7 +361,6 @@ public sealed class RegistryService
             {
                 Endpoint = request.Endpoint.Trim(),
                 SidecarEndpoint = NormalizeOptionalEndpoint(request.SidecarEndpoint),
-                PairingToken = request.PairingToken.Trim(),
                 Capabilities = capabilities,
                 CapabilitySource = capabilitySource,
                 CapabilityFetchedAt = capabilityFetchedAt,
@@ -381,7 +380,6 @@ public sealed class RegistryService
             request.Name.Trim(),
             request.Endpoint.Trim(),
             NormalizeOptionalEndpoint(request.SidecarEndpoint),
-            request.PairingToken.Trim(),
             now,
             now,
             capabilities,
@@ -411,7 +409,6 @@ public sealed class RegistryService
                 runtime.Name.Trim(),
                 runtime.Endpoint.Trim(),
                 NormalizeOptionalEndpoint(runtime.SidecarEndpoint),
-                runtime.PairingToken.Trim(),
                 runtime.RegisteredAt,
                 runtime.UpdatedAt,
                 NormalizeCapabilities(runtime.Capabilities),
@@ -639,7 +636,6 @@ public sealed class RegistryService
         string Name,
         string Endpoint,
         string? SidecarEndpoint,
-        string PairingToken,
         DateTimeOffset RegisteredAt,
         DateTimeOffset UpdatedAt,
         IReadOnlyList<RuntimeCapability> Capabilities,
@@ -657,7 +653,7 @@ public sealed class RegistryService
             new(RuntimeId, Name, Endpoint, SidecarEndpoint, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status, SidecarStatus);
 
         public PersistedRuntimeState ToPersistedState() =>
-            new(RuntimeId, Name, Endpoint, SidecarEndpoint, PairingToken, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status, SidecarStatus);
+            new(RuntimeId, Name, Endpoint, SidecarEndpoint, RegisteredAt, UpdatedAt, Capabilities, CapabilitySource, CapabilityFetchedAt, CapabilityFetchError, Tags, Status, SidecarStatus);
     }
 
     private sealed record SessionRecord(

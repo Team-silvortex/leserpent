@@ -11,6 +11,7 @@ public class Program
 
         builder.Services.AddAuthorization();
         builder.Services.AddOpenApi();
+        builder.Services.AddSingleton<ControlPlaneSecurityPolicy>();
         builder.Services.AddSingleton<ControlPlaneStateStore>();
         builder.Services.AddSingleton<RegistryService>();
         builder.Services.AddHttpClient<CapabilityDiscoveryService>();
@@ -25,14 +26,32 @@ public class Program
         app.UseDefaultFiles();
         app.UseStaticFiles();
         app.UseHttpsRedirection();
+        app.Use(async (context, next) =>
+        {
+            var security = context.RequestServices.GetRequiredService<ControlPlaneSecurityPolicy>();
+            if (!security.TryAuthorize(context, out var statusCode, out var payload))
+            {
+                context.Response.StatusCode = statusCode;
+                await context.Response.WriteAsJsonAsync(payload);
+                return;
+            }
+
+            await next();
+        });
         app.UseAuthorization();
 
-        app.MapGet("/health", (ControlPlaneStateStore stateStore, RegistryService registry) => Results.Ok(new
+        app.MapGet("/health", (ControlPlaneStateStore stateStore, RegistryService registry, ControlPlaneSecurityPolicy security) => Results.Ok(new
         {
             ok = true,
             service = "leserpent",
             role = "control-plane",
             version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
+            security = new
+            {
+                apiMode = security.ApiMode,
+                adminTokenConfigured = security.AdminTokenConfigured,
+                publicEndpointDiscoveryAllowed = security.PublicEndpointDiscoveryAllowed,
+            },
             persistence = new
             {
                 statePath = stateStore.StatePath,
@@ -47,7 +66,7 @@ public class Program
             },
         }));
 
-        app.MapGet("/v1/capabilities", (ControlPlaneStateStore stateStore, RegistryService registry) =>
+        app.MapGet("/v1/capabilities", (ControlPlaneStateStore stateStore, RegistryService registry, ControlPlaneSecurityPolicy security) =>
             Results.Ok(new ServiceCapabilities(
                 "leserpent",
                 typeof(Program).Assembly.GetName().Version?.ToString() ?? "dev",
@@ -89,7 +108,11 @@ public class Program
                     stateStore.LastSaveError,
                     registry.RestoredRuntimeCount,
                     registry.RestoredSessionCount,
-                    registry.RestoredFromSavedAt))));
+                    registry.RestoredFromSavedAt),
+                new ServiceSecurityCapabilities(
+                    security.ApiMode,
+                    security.AdminTokenConfigured,
+                    security.PublicEndpointDiscoveryAllowed))));
 
         app.MapPost("/v1/persistence/save", (RegistryService registry) =>
             Results.Ok(new PersistenceSaveResponse(true, registry.SaveNow())));
@@ -102,7 +125,7 @@ public class Program
                 $"leserpent-control-plane-state-{state.SavedAt:yyyyMMddHHmmss}.json");
         });
 
-        app.MapPost("/v1/persistence/import", async (HttpRequest request, RegistryService registry, ControlPlaneStateStore stateStore, CancellationToken cancellationToken) =>
+        app.MapPost("/v1/persistence/import", async (HttpRequest request, RegistryService registry, ControlPlaneStateStore stateStore, ControlPlaneSecurityPolicy security, CancellationToken cancellationToken) =>
         {
             PersistedControlPlaneState? imported;
             try
@@ -134,6 +157,16 @@ public class Program
                     error = "incompatible_persistence_import",
                     schemaVersion = imported.SchemaVersion,
                     expectedSchemaVersion = stateStore.SchemaVersion,
+                });
+            }
+
+            var importValidation = await security.ValidateImportAsync(imported, cancellationToken);
+            if (importValidation is not null)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "invalid_persistence_import",
+                    reason = importValidation,
                 });
             }
 
@@ -331,7 +364,7 @@ public class Program
                 : Results.Ok(new RuntimeSidecarRefreshResponse(runtime.RuntimeId, runtime.Name, runtime.Endpoint, runtime.SidecarEndpoint, runtime.SidecarStatus));
         });
 
-        app.MapPost("/v1/runtimes/register", async (RuntimeRegistrationRequest request, RegistryService registry, CapabilityDiscoveryService discovery, CancellationToken cancellationToken) =>
+        app.MapPost("/v1/runtimes/register", async (RuntimeRegistrationRequest request, RegistryService registry, CapabilityDiscoveryService discovery, ControlPlaneSecurityPolicy security, CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Endpoint))
             {
@@ -339,6 +372,16 @@ public class Program
                 {
                     error = "invalid_runtime_registration",
                     reason = "name and endpoint are required",
+                });
+            }
+
+            var registrationValidation = await security.ValidateRegistrationAsync(request, cancellationToken);
+            if (registrationValidation is not null)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "invalid_runtime_registration",
+                    reason = registrationValidation,
                 });
             }
 

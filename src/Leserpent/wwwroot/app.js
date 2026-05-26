@@ -118,6 +118,13 @@ const translations = {
       title: "Runtime Child Panel",
       notReady: "no runtime selected",
       empty: "Select a runtime to load its child control panel.",
+      compactTrustObserved: "Live runtime snapshot is available.",
+      compactTrustUnobserved: "Waiting for the first runtime snapshot.",
+      compactTrustFetchFailed: "Last runtime refresh failed; treat data as stale.",
+      compactTrustSidecarObserved: "Live sidecar snapshot is available.",
+      compactTrustSidecarUnobserved: "Waiting for the first sidecar snapshot.",
+      compactTrustSidecarFetchFailed: "Last sidecar refresh failed; treat data as stale.",
+      compactTrustNoSidecar: "No paired sidecar is configured.",
       blankRuntimeTitle: "This runtime panel is not ready yet",
       blankRuntimeBody: "We know where this runtime lives, but it has not published panel-ready data yet. Use the control-plane summary above as your source of truth first.",
       blankSidecarTitle: "This sidecar panel is not ready yet",
@@ -435,6 +442,13 @@ const translations = {
       title: "Runtime 子面板",
       notReady: "尚未选择 runtime",
       empty: "选择一个 runtime 后，就能加载它的子控制页面。",
+      compactTrustObserved: "runtime 实时快照已可用。",
+      compactTrustUnobserved: "正在等待第一份 runtime 快照。",
+      compactTrustFetchFailed: "最近一次 runtime 刷新失败，请把当前数据当作可能过期。",
+      compactTrustSidecarObserved: "sidecar 实时快照已可用。",
+      compactTrustSidecarUnobserved: "正在等待第一份 sidecar 快照。",
+      compactTrustSidecarFetchFailed: "最近一次 sidecar 刷新失败，请把当前数据当作可能过期。",
+      compactTrustNoSidecar: "当前没有配置 paired sidecar。",
       blankRuntimeTitle: "这个 runtime 面板还没准备好",
       blankRuntimeBody: "我们已经知道这台 runtime 在哪，但它还没有发布适合直接展示的面板数据。现在先把上面的控制平面摘要当作准绳更合适。",
       blankSidecarTitle: "这个 sidecar 面板还没准备好",
@@ -973,6 +987,20 @@ function renderRuntimePanelBlank(runtime, trust, url, view = state.runtimePanelV
   `;
 }
 
+function compactTrustMessage(trust, view = state.runtimePanelView) {
+  const source = runtimePanelSource(view);
+  if (source === "sidecar") {
+    if (trust.source === "fetch_failed") return t("runtimePanel.compactTrustSidecarFetchFailed");
+    if (trust.source === "unobserved") return t("runtimePanel.compactTrustSidecarUnobserved");
+    if (trust.label === t("runtimePanel.trustNoSidecar")) return t("runtimePanel.compactTrustNoSidecar");
+    return t("runtimePanel.compactTrustSidecarObserved");
+  }
+
+  if (trust.source === "fetch_failed") return t("runtimePanel.compactTrustFetchFailed");
+  if (trust.source === "unobserved") return t("runtimePanel.compactTrustUnobserved");
+  return t("runtimePanel.compactTrustObserved");
+}
+
 function defaultRuntimePanelViewForSource(source) {
   return source === "sidecar" ? "sidecar-root" : "root";
 }
@@ -1160,7 +1188,13 @@ async function getJson(path) {
 }
 
 async function postJson(path) {
-  const response = await fetch(path, { method: "POST", headers: { accept: "application/json" } });
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "x-leserpent-intent": "mutate",
+    },
+  });
   if (!response.ok) {
     throw new Error(`${path} -> ${response.status}`);
   }
@@ -1173,6 +1207,7 @@ async function postJsonBody(path, body) {
     headers: {
       accept: "application/json",
       "content-type": "application/json",
+      "x-leserpent-intent": "mutate",
     },
     body: JSON.stringify(body),
   });
@@ -1682,23 +1717,19 @@ function renderRuntimePanel(runtime) {
     <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbFleet"))}</span>
     <span class="crumb-value">${escapeHtml(runtime.name)}</span>
     <span class="crumb-sep">/</span>
-    <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbSource"))}</span>
     <span class="crumb-value">${escapeHtml(sourceLabel)}</span>
     <span class="crumb-sep">/</span>
-    <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbView"))}</span>
     <span class="crumb-value">${escapeHtml(viewLabel)}</span>
   `;
   nodes.runtimePanelTrust.className = `runtime-panel-trust ${trust.tone}`;
   nodes.runtimePanelTrust.innerHTML = `
-    <div class="runtime-panel-trust-head">
-      <span class="runtime-panel-trust-title">${escapeHtml(t("runtimePanel.trustTitle"))}</span>
-      <span class="runtime-state ${escapeHtml(trust.tone)}">${escapeHtml(trust.label)}</span>
-      <span class="runtime-panel-trust-message">${escapeHtml(trust.message)}</span>
-      ${trust.refreshKind
-        ? `<button type="button" class="runtime-panel-trust-inline-action" data-runtime-panel-refresh="${escapeHtml(trust.refreshKind)}">${escapeHtml(trust.refreshKind === "sidecar" ? t("runtimePanel.trustRefreshSidecar") : t("runtimePanel.trustRefreshStatus"))}</button>`
-        : ""}
-    </div>
-    <div class="runtime-panel-trust-meta">${escapeHtml(t("runtimePanel.trustMeta", { source: trust.source, snapshot: trust.snapshot }))}</div>
+    <span class="runtime-panel-trust-title">${escapeHtml(t("runtimePanel.trustTitle"))}</span>
+    <span class="runtime-state ${escapeHtml(trust.tone)}">${escapeHtml(trust.label)}</span>
+    <span class="runtime-panel-trust-message">${escapeHtml(compactTrustMessage(trust, state.runtimePanelView))}</span>
+    <span class="runtime-panel-trust-meta">${escapeHtml(t("runtimePanel.trustMeta", { source: trust.source, snapshot: trust.snapshot }))}</span>
+    ${trust.refreshKind
+      ? `<button type="button" class="runtime-panel-trust-inline-action" data-runtime-panel-refresh="${escapeHtml(trust.refreshKind)}">${escapeHtml(trust.refreshKind === "sidecar" ? t("runtimePanel.trustRefreshSidecar") : t("runtimePanel.trustRefreshStatus"))}</button>`
+      : ""}
   `;
   const trustRefreshButton = nodes.runtimePanelTrust.querySelector("[data-runtime-panel-refresh]");
   if (trustRefreshButton) {
@@ -1707,32 +1738,8 @@ function renderRuntimePanel(runtime) {
     });
   }
   nodes.runtimePanelSourceSwitch.classList.add("hidden");
-  nodes.runtimePanelSourceBadges.classList.remove("hidden");
-  nodes.runtimePanelSourceBadges.innerHTML = `
-    <button type="button" class="runtime-panel-source-badge ${source === "runtime" ? "is-active" : ""}" data-runtime-panel-badge-source="runtime">
-      <strong>${escapeHtml(t("runtimePanel.sources.runtime"))}</strong>
-      <span class="runtime-state ${escapeHtml(runtimeBadge.tone)}">${escapeHtml(runtimeBadge.text)}</span>
-      ${badgeRecentlyUpdated("runtime") ? `<span class="chip">${escapeHtml(t("notifications.badgeUpdated"))}</span>` : ""}
-      ${runtimeBadge.refreshKind ? `<span class="chip">${escapeHtml(t("runtimePanel.trustRefreshStatus"))}</span>` : ""}
-    </button>
-    <button type="button" class="runtime-panel-source-badge ${source === "sidecar" ? "is-active" : ""}" data-runtime-panel-badge-source="sidecar" ${runtime.sidecarEndpoint ? "" : "disabled"}>
-      <strong>${escapeHtml(t("runtimePanel.sources.sidecar"))}</strong>
-      <span class="runtime-state ${escapeHtml(sidecarBadge.tone)}">${escapeHtml(sidecarBadge.text)}</span>
-      ${badgeRecentlyUpdated("sidecar") ? `<span class="chip">${escapeHtml(t("notifications.badgeUpdated"))}</span>` : ""}
-      ${sidecarBadge.refreshKind ? `<span class="chip">${escapeHtml(t("runtimePanel.trustRefreshSidecar"))}</span>` : ""}
-    </button>
-  `;
-  for (const badge of nodes.runtimePanelSourceBadges.querySelectorAll("[data-runtime-panel-badge-source]")) {
-    badge.addEventListener("click", async () => {
-      const badgeSource = badge.dataset.runtimePanelBadgeSource;
-      const refreshKind = badgeSource === "runtime" ? runtimeBadge.refreshKind : sidecarBadge.refreshKind;
-      if (refreshKind) {
-        await refreshRuntimeById(runtime.runtimeId, refreshKind);
-        return;
-      }
-      switchRuntimePanelSource(badgeSource, runtime);
-    });
-  }
+  nodes.runtimePanelSourceBadges.classList.add("hidden");
+  nodes.runtimePanelSourceBadges.innerHTML = "";
   nodes.runtimePanelActions.classList.remove("hidden");
   for (const tab of nodes.runtimePanelTabs) {
     const wantsSidecar = isSidecarView(tab.dataset.runtimePanelView);
@@ -1977,7 +1984,12 @@ async function savePersistenceNow() {
 async function exportPersistenceState() {
   nodes.statusLine.textContent = t("persistence.exporting");
   try {
-    const response = await fetch("/v1/persistence/export", { headers: { accept: "application/json" } });
+    const response = await fetch("/v1/persistence/export", {
+      headers: {
+        accept: "application/json",
+        "x-leserpent-intent": "export",
+      },
+    });
     if (!response.ok) {
       throw new Error(`/v1/persistence/export -> ${response.status}`);
     }
@@ -2025,6 +2037,7 @@ async function importPersistenceState(file) {
       headers: {
         accept: "application/json",
         "content-type": "application/json",
+        "x-leserpent-intent": "mutate",
       },
       body: JSON.stringify(parsed),
     });

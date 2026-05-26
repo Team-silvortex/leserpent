@@ -3,11 +3,17 @@ using System.Text.Json.Serialization;
 
 namespace Leserpent.ControlPlane;
 
-public sealed class CapabilityDiscoveryService(HttpClient httpClient)
+public sealed class CapabilityDiscoveryService(HttpClient httpClient, ControlPlaneSecurityPolicy securityPolicy)
 {
     public async Task<CapabilityDiscoveryResult> DiscoverAsync(string endpoint, string? capabilityEndpoint, CancellationToken cancellationToken)
     {
         var capabilityUrl = BuildCapabilityUrl(endpoint, capabilityEndpoint);
+        var validationError = await securityPolicy.ValidateEndpointUrlAsync(capabilityUrl, "capability endpoint", cancellationToken);
+        if (validationError is not null)
+        {
+            return CapabilityDiscoveryResult.Failed(capabilityUrl, validationError);
+        }
+
         try
         {
             var payload = await httpClient.GetFromJsonAsync<GewyvernCapabilityPayload>(capabilityUrl, cancellationToken);
@@ -44,6 +50,12 @@ public sealed class CapabilityDiscoveryService(HttpClient httpClient)
     public async Task<RuntimeStatusDiscoveryResult> DiscoverStatusAsync(string endpoint, string? statusEndpoint, CancellationToken cancellationToken)
     {
         var statusUrl = BuildStatusUrl(endpoint, statusEndpoint);
+        var validationError = await securityPolicy.ValidateEndpointUrlAsync(statusUrl, "status endpoint", cancellationToken);
+        if (validationError is not null)
+        {
+            return RuntimeStatusDiscoveryResult.Failed(statusUrl, validationError);
+        }
+
         try
         {
             var payload = await httpClient.GetFromJsonAsync<GewyvernLatestMetaPayload>(statusUrl, cancellationToken);
@@ -82,6 +94,30 @@ public sealed class CapabilityDiscoveryService(HttpClient httpClient)
         var statusUrl = BuildSidecarStatusUrl(sidecarEndpoint, sidecarStatusEndpoint);
         var enrichmentUrl = BuildSidecarEnrichmentUrl(sidecarEndpoint);
         var opinionUrl = BuildSidecarOpinionUrl(sidecarEndpoint);
+
+        var healthValidation = await securityPolicy.ValidateEndpointUrlAsync(healthUrl, "sidecar health endpoint", cancellationToken);
+        if (healthValidation is not null)
+        {
+            return RuntimeSidecarDiscoveryResult.Failed(statusUrl, healthValidation);
+        }
+
+        var statusValidation = await securityPolicy.ValidateEndpointUrlAsync(statusUrl, "sidecar status endpoint", cancellationToken);
+        if (statusValidation is not null)
+        {
+            return RuntimeSidecarDiscoveryResult.Failed(statusUrl, statusValidation);
+        }
+
+        var enrichmentValidation = await securityPolicy.ValidateEndpointUrlAsync(enrichmentUrl, "sidecar enrichment endpoint", cancellationToken);
+        if (enrichmentValidation is not null)
+        {
+            return RuntimeSidecarDiscoveryResult.Failed(statusUrl, enrichmentValidation);
+        }
+
+        var opinionValidation = await securityPolicy.ValidateEndpointUrlAsync(opinionUrl, "sidecar opinion endpoint", cancellationToken);
+        if (opinionValidation is not null)
+        {
+            return RuntimeSidecarDiscoveryResult.Failed(statusUrl, opinionValidation);
+        }
 
         try
         {

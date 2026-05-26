@@ -126,7 +126,8 @@ public sealed record ServiceCapabilities(
     string Version,
     string Role,
     IReadOnlyList<string> Routes,
-    ServicePersistenceCapabilities? Persistence = null
+    ServicePersistenceCapabilities? Persistence = null,
+    ServiceSecurityCapabilities? Security = null
 );
 
 public sealed record ServicePersistenceCapabilities(
@@ -140,6 +141,12 @@ public sealed record ServicePersistenceCapabilities(
     int RestoredRuntimeCount = 0,
     int RestoredSessionCount = 0,
     DateTimeOffset? RestoredFromSavedAt = null
+);
+
+public sealed record ServiceSecurityCapabilities(
+    string ApiMode,
+    bool AdminTokenConfigured,
+    bool PublicEndpointDiscoveryAllowed
 );
 
 public sealed record PersistenceSaveResponse(
@@ -298,7 +305,6 @@ public sealed record PersistedRuntimeState(
     string Name,
     string Endpoint,
     string? SidecarEndpoint,
-    string PairingToken,
     DateTimeOffset RegisteredAt,
     DateTimeOffset UpdatedAt,
     IReadOnlyList<RuntimeCapability> Capabilities,
