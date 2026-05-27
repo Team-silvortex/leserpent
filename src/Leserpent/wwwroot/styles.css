@@ -26,17 +26,193 @@
   --panel: #0f1a2b;
   --panel-2: #152235;
   --ink: #edf4ff;
-  --muted: #9eb4d3;
-  --line: #2a4264;
-  --line-strong: #48658b;
+  --muted: #bfd0ea;
+  --line: #315072;
+  --line-strong: #5f83b2;
   --accent: #67a3ff;
-  --accent-strong: #3777d9;
-  --accent-soft: rgba(103, 163, 255, 0.16);
-  --warn: #ffca66;
-  --warn-soft: rgba(255, 202, 102, 0.14);
-  --danger: #ff9098;
-  --danger-soft: rgba(255, 144, 152, 0.14);
+  --accent-strong: #8db8ff;
+  --accent-soft: rgba(103, 163, 255, 0.22);
+  --warn: #ffd782;
+  --warn-soft: rgba(255, 215, 130, 0.2);
+  --danger: #ffadb3;
+  --danger-soft: rgba(255, 173, 179, 0.2);
   --shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+}
+
+:root[data-theme="dark"] .sidebar-shell,
+:root[data-theme="dark"] .tab-shell,
+:root[data-theme="dark"] .metric,
+:root[data-theme="dark"] .group-card,
+:root[data-theme="dark"] .attention-item,
+:root[data-theme="dark"] .session-item,
+:root[data-theme="dark"] .register-preview,
+:root[data-theme="dark"] .runtime-register-footer .form-result,
+:root[data-theme="dark"] .runtime-panel-source-button,
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-status,
+:root[data-theme="dark"] .security-details summary,
+:root[data-theme="dark"] .security-details-body {
+  background: linear-gradient(180deg, rgba(20, 32, 50, 0.98) 0%, rgba(13, 23, 38, 0.98) 100%);
+}
+
+:root[data-theme="dark"] .chip {
+  background: rgba(116, 160, 230, 0.16);
+  color: #d8e7ff;
+  border-color: rgba(116, 160, 230, 0.34);
+}
+
+:root[data-theme="dark"] .chip.attention {
+  background: rgba(255, 215, 130, 0.16);
+  color: #ffe5ab;
+}
+
+:root[data-theme="dark"] .tab-button,
+:root[data-theme="dark"] .runtime-main-tab-button,
+:root[data-theme="dark"] .runtime-detail-subtab-button,
+:root[data-theme="dark"] .overview-subtab-button {
+  background: linear-gradient(180deg, rgba(21, 35, 55, 0.98) 0%, rgba(14, 24, 39, 0.98) 100%);
+  color: #e3eeff;
+  border-color: rgba(95, 131, 178, 0.7);
+}
+
+:root[data-theme="dark"] .tab-button.active,
+:root[data-theme="dark"] .runtime-main-tab-button.active,
+:root[data-theme="dark"] .runtime-detail-subtab-button.active,
+:root[data-theme="dark"] .overview-subtab-button.active,
+:root[data-theme="dark"] .runtime-panel-tab.is-active {
+  background: linear-gradient(180deg, #77abff 0%, #5c93ea 100%);
+  border-color: #77abff;
+  color: #071321;
+  box-shadow: 0 10px 24px rgba(59, 124, 228, 0.28);
+}
+
+:root[data-theme="dark"] .tag-pill,
+:root[data-theme="dark"] .reason-pill,
+:root[data-theme="dark"] .runtime-state {
+  background: rgba(116, 160, 230, 0.12);
+  border-color: rgba(116, 160, 230, 0.28);
+  color: #d6e6ff;
+}
+
+:root[data-theme="dark"] .runtime-state.good {
+  background: rgba(103, 163, 255, 0.18);
+  color: #d8e7ff;
+}
+
+:root[data-theme="dark"] .runtime-state.warn,
+:root[data-theme="dark"] .tag-pill.attention,
+:root[data-theme="dark"] .reason-pill.attention {
+  background: rgba(255, 215, 130, 0.16);
+  color: #ffe5ab;
+}
+
+:root[data-theme="dark"] .runtime-state.bad {
+  background: rgba(255, 173, 179, 0.16);
+  color: #ffd5d9;
+}
+
+:root[data-theme="dark"] th {
+  background: rgba(35, 52, 79, 0.95);
+  color: #d7e4fb;
+}
+
+:root[data-theme="dark"] tbody tr:hover {
+  background: rgba(103, 163, 255, 0.12);
+}
+
+:root[data-theme="dark"] tbody tr.selected {
+  background: rgba(103, 163, 255, 0.18);
+}
+
+:root[data-theme="dark"] .runtime-panel-breadcrumb,
+:root[data-theme="dark"] .runtime-frame-url {
+  background: linear-gradient(180deg, rgba(30, 45, 69, 0.95) 0%, rgba(18, 31, 49, 0.95) 100%);
+  color: #dce9ff;
+}
+
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-value,
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-label,
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-sep,
+:root[data-theme="dark"] .runtime-frame-url {
+  color: #dce9ff;
+}
+
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-status.good {
+  color: #cbf2df;
+  border-color: rgba(116, 205, 159, 0.34);
+  background: rgba(42, 92, 69, 0.58);
+}
+
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-status.warn {
+  color: #ffe7b1;
+  border-color: rgba(255, 215, 130, 0.34);
+  background: rgba(96, 72, 23, 0.58);
+}
+
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-status.bad {
+  color: #ffd8dc;
+  border-color: rgba(255, 173, 179, 0.34);
+  background: rgba(92, 38, 47, 0.58);
+}
+
+:root[data-theme="dark"] .runtime-panel-trust {
+  background: linear-gradient(180deg, rgba(24, 37, 57, 0.98) 0%, rgba(15, 25, 40, 0.98) 100%);
+}
+
+:root[data-theme="dark"] .runtime-panel-trust.good {
+  background: linear-gradient(180deg, rgba(32, 68, 56, 0.94) 0%, rgba(21, 49, 40, 0.94) 100%);
+}
+
+:root[data-theme="dark"] .runtime-panel-trust.warn {
+  background: linear-gradient(180deg, rgba(84, 62, 20, 0.94) 0%, rgba(58, 43, 15, 0.94) 100%);
+}
+
+:root[data-theme="dark"] .runtime-panel-trust.bad {
+  background: linear-gradient(180deg, rgba(88, 36, 43, 0.94) 0%, rgba(60, 24, 30, 0.94) 100%);
+}
+
+:root[data-theme="dark"] .runtime-panel-trust-message,
+:root[data-theme="dark"] .runtime-panel-trust-meta {
+  color: #eef5ff;
+}
+
+:root[data-theme="dark"] .runtime-panel-trust-inline-action {
+  background: rgba(17, 28, 44, 0.92);
+  color: #eef5ff;
+}
+
+:root[data-theme="dark"] .security-token-state,
+:root[data-theme="dark"] .form-result,
+:root[data-theme="dark"] .subcopy,
+:root[data-theme="dark"] .compact-field span,
+:root[data-theme="dark"] .search-box span,
+:root[data-theme="dark"] .metric-label,
+:root[data-theme="dark"] .group-title,
+:root[data-theme="dark"] .item-meta,
+:root[data-theme="dark"] .reason-line,
+:root[data-theme="dark"] .hint-line,
+:root[data-theme="dark"] .sidebar-kicker,
+:root[data-theme="dark"] .language-picker span {
+  color: #bfd0ea;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select {
+  background: #101a2c;
+  color: #edf4ff;
+}
+
+:root[data-theme="dark"] input::placeholder {
+  color: #88a0c1;
+}
+
+:root[data-theme="dark"] .runtime-panel-blank {
+  background: linear-gradient(180deg, rgba(18, 29, 45, 0.98) 0%, rgba(13, 22, 35, 0.98) 100%);
+  color: #c8d8ef;
+}
+
+:root[data-theme="dark"] .runtime-panel-blank-copy strong,
+:root[data-theme="dark"] .runtime-panel-blank-copy p {
+  color: #e7f0ff;
 }
 
 * {

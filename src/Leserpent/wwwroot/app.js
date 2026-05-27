@@ -1438,6 +1438,21 @@ async function testAdminToken() {
   }
 }
 
+function apiHeaders({ contentType = null, intent = null } = {}) {
+  const headers = {};
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  }
+  if (intent) {
+    headers["X-Leserpent-Intent"] = intent;
+  }
+  const token = state.adminToken?.trim();
+  if (token) {
+    headers["X-Leserpent-Admin-Token"] = token;
+  }
+  return headers;
+}
+
 async function getJson(path) {
   const response = await fetch(path, { headers: apiHeaders() });
   if (!response.ok) {
