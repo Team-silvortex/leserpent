@@ -21,14 +21,40 @@
             <button id="refresh-status" data-i18n="actions.refreshStatus">Refresh Status</button>
             <button id="refresh-capabilities" data-i18n="actions.refreshCapabilities">Refresh Capabilities</button>
           </div>
-          <label class="language-picker compact-field">
-            <span data-i18n="language.label">Language</span>
-            <select id="language-select">
-              <option value="auto">Auto</option>
-              <option value="en">English</option>
-              <option value="zh-CN">简体中文</option>
-            </select>
-          </label>
+          <div class="app-security-tools">
+            <label class="language-picker compact-field">
+              <span data-i18n="language.label">Language</span>
+              <select id="language-select">
+                <option value="auto">Auto</option>
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+              </select>
+            </label>
+            <label class="theme-picker compact-field">
+              <span data-i18n="theme.label">Theme</span>
+              <select id="theme-select">
+                <option value="auto">Auto</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+            <details class="security-details" id="security-details">
+              <summary data-i18n="security.title">Security</summary>
+              <div class="security-details-body">
+                <label class="compact-field security-token-field">
+                  <span data-i18n="security.adminToken">Admin Token</span>
+                  <input id="admin-token-input" type="password" placeholder="optional for remote access" data-i18n-placeholder="security.adminTokenPlaceholder" autocomplete="off" />
+                </label>
+                <div class="security-token-actions">
+                  <button id="admin-token-toggle-visibility" type="button" class="quiet" data-i18n="security.showToken">Show Token</button>
+                  <button id="admin-token-test" type="button" class="quiet" data-i18n="security.testToken">Test Token</button>
+                  <button id="admin-token-clear" type="button" class="quiet" data-i18n="security.clearToken">Clear Token</button>
+                </div>
+                <div id="admin-token-state" class="security-token-state" data-i18n="security.localModeHint">Loopback mode is active locally. Add a token only when you are intentionally connecting through a protected remote endpoint.</div>
+                <div id="admin-token-last-test" class="security-token-state security-token-last-test">Last token test: never tested.</div>
+              </div>
+            </details>
+          </div>
         </div>
       </div>
       <div class="app-toolbar">

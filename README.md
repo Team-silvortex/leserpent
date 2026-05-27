@@ -225,6 +225,31 @@ runtime：
 
 也就是说，重启 `leserpent` 后，runtime registry 和 session 列表不会重新变成空白。
 
+### 当前 API 安全边界
+
+当前 `leserpent` 已经补了一层 very-light 的 control-plane 安全边界：
+
+- 默认 API 模式：
+  - `loopback_only`
+  - 也就是只有本机 loopback 请求可以直接访问控制面
+- 如果设置：
+  - `LESERPENT_ADMIN_TOKEN=...`
+  - API 模式会变成：`loopback_or_token`
+  - 远端请求必须带：
+    - `X-Leserpent-Admin-Token: <token>`
+- 对本地但敏感的写操作，还会要求 very-light intent header：
+  - `X-Leserpent-Intent: mutate`
+  - `X-Leserpent-Intent: export`
+- dashboard 现在已经内建了一个 `Security` 小折叠区：
+  - 可在浏览器本地保存 admin token
+  - 之后所有控制面请求会自动带上 `X-Leserpent-Admin-Token`
+
+同时，runtime / sidecar endpoint 的 server-side discovery 默认也已经收紧：
+
+- 默认只允许 loopback 或私网地址
+- 如果你明确要让控制面抓公网 endpoint，需要设置：
+  - `LESERPENT_ALLOW_PUBLIC_ENDPOINTS=true`
+
 当前这些 very-light persistence signals 也会直接暴露出来：
 
 - `GET /health`

@@ -10,6 +10,43 @@ const translations = {
       english: "English",
       simplifiedChinese: "简体中文",
     },
+    theme: {
+      label: "Theme",
+      auto: "Follow System",
+      light: "Day",
+      dark: "Night",
+    },
+    security: {
+      title: "Security",
+      adminToken: "Admin Token",
+      adminTokenPlaceholder: "optional for remote access",
+      clearToken: "Clear Token",
+      showToken: "Show Token",
+      hideToken: "Hide Token",
+      testToken: "Test Token",
+      localModeHint: "Loopback mode is active locally. Add a token only when you are intentionally connecting through a protected remote endpoint.",
+      tokenStored: "Admin token stored in this browser session.",
+      tokenCleared: "Admin token cleared.",
+      tokenRequired: "This control plane denied the request. If you are connecting remotely, add the configured admin token.",
+      tokenTestRunning: "Testing admin token...",
+      tokenTestOk: "Admin token accepted for the current control-plane endpoint.",
+      tokenTestFailed: "Admin token test failed: {message}",
+      tokenMissing: "Add an admin token first, then test it.",
+      lastTokenTest: "Last token test",
+      neverTested: "never tested",
+      testStateOk: "ok",
+      testStateFailed: "failed",
+      testStateRunning: "running",
+      mode: "security mode",
+      tokenConfigured: "admin token",
+      publicDiscovery: "public discovery",
+      configured: "configured",
+      notConfigured: "not configured",
+      enabled: "enabled",
+      disabled: "disabled",
+      loopbackOnly: "loopback only",
+      tokenMode: "loopback or token",
+    },
     actions: {
       refreshAll: "Fleet Refresh All",
       refreshStatus: "Refresh Status",
@@ -334,6 +371,43 @@ const translations = {
       english: "English",
       simplifiedChinese: "简体中文",
     },
+    theme: {
+      label: "主题",
+      auto: "跟随系统",
+      light: "白天",
+      dark: "夜晚",
+    },
+    security: {
+      title: "安全",
+      adminToken: "管理令牌",
+      adminTokenPlaceholder: "远程接入时可选",
+      clearToken: "清除令牌",
+      showToken: "显示令牌",
+      hideToken: "隐藏令牌",
+      testToken: "测试令牌",
+      localModeHint: "当前本地是 loopback 模式。只有在你明确通过受保护的远程入口访问时，才需要填管理令牌。",
+      tokenStored: "管理令牌已保存在当前浏览器。",
+      tokenCleared: "管理令牌已清除。",
+      tokenRequired: "这次请求被控制面拒绝了。如果你现在是远程接入，请填入已配置的管理令牌。",
+      tokenTestRunning: "正在测试管理令牌...",
+      tokenTestOk: "这枚管理令牌已被当前控制面接受。",
+      tokenTestFailed: "管理令牌测试失败：{message}",
+      tokenMissing: "先填一枚管理令牌，再测试。",
+      lastTokenTest: "最近一次令牌测试",
+      neverTested: "从未测试",
+      testStateOk: "成功",
+      testStateFailed: "失败",
+      testStateRunning: "测试中",
+      mode: "安全模式",
+      tokenConfigured: "管理令牌",
+      publicDiscovery: "公网发现",
+      configured: "已配置",
+      notConfigured: "未配置",
+      enabled: "开启",
+      disabled: "关闭",
+      loopbackOnly: "仅本机",
+      tokenMode: "本机或令牌",
+    },
     actions: {
       refreshAll: "整组刷新",
       refreshStatus: "刷新状态",
@@ -657,6 +731,8 @@ const state = {
   },
   languagePreference: "auto",
   language: "en",
+  themePreference: "auto",
+  theme: "light",
   activeTab: "overview",
   activeOverviewTab: "summary",
   activeRuntimeMainTab: "select",
@@ -672,6 +748,10 @@ const state = {
   },
   latestRuntimes: [],
   registerNameTouched: false,
+  adminToken: "",
+  adminTokenVisible: false,
+  adminTokenTestState: "never",
+  adminTokenTestAt: null,
   cache: {
     capabilities: null,
     fleetSummary: null,
@@ -684,6 +764,10 @@ const state = {
 
 const storageKeys = {
   languagePreference: "leserpent.languagePreference",
+  themePreference: "leserpent.themePreference",
+  adminToken: "leserpent.adminToken",
+  adminTokenTestState: "leserpent.adminTokenTestState",
+  adminTokenTestAt: "leserpent.adminTokenTestAt",
 };
 
 const nodes = {
@@ -760,6 +844,14 @@ const nodes = {
   registerPreview: document.getElementById("register-preview"),
   registerResult: document.getElementById("register-result"),
   languageSelect: document.getElementById("language-select"),
+  themeSelect: document.getElementById("theme-select"),
+  securityDetails: document.getElementById("security-details"),
+  adminTokenInput: document.getElementById("admin-token-input"),
+  adminTokenToggleVisibility: document.getElementById("admin-token-toggle-visibility"),
+  adminTokenTest: document.getElementById("admin-token-test"),
+  adminTokenClear: document.getElementById("admin-token-clear"),
+  adminTokenState: document.getElementById("admin-token-state"),
+  adminTokenLastTest: document.getElementById("admin-token-last-test"),
   tabButtons: Array.from(document.querySelectorAll(".tab-button")),
   tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
   overviewSubtabButtons: Array.from(document.querySelectorAll(".overview-subtab-button")),
@@ -800,9 +892,101 @@ function setStoredLanguagePreference(value) {
   }
 }
 
+function getStoredThemePreference() {
+  try {
+    return window.localStorage.getItem(storageKeys.themePreference);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredThemePreference(value) {
+  try {
+    if (!value || value === "auto") {
+      window.localStorage.removeItem(storageKeys.themePreference);
+      return;
+    }
+    window.localStorage.setItem(storageKeys.themePreference, value);
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function getStoredAdminToken() {
+  try {
+    return window.localStorage.getItem(storageKeys.adminToken) || "";
+  } catch {
+    return "";
+  }
+}
+
+function setStoredAdminToken(value) {
+  try {
+    const normalized = value?.trim() || "";
+    if (!normalized) {
+      window.localStorage.removeItem(storageKeys.adminToken);
+      return;
+    }
+    window.localStorage.setItem(storageKeys.adminToken, normalized);
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function getStoredAdminTokenTestState() {
+  try {
+    return window.localStorage.getItem(storageKeys.adminTokenTestState) || "never";
+  } catch {
+    return "never";
+  }
+}
+
+function getStoredAdminTokenTestAt() {
+  try {
+    return window.localStorage.getItem(storageKeys.adminTokenTestAt) || null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredAdminTokenTest(stateValue, atValue) {
+  try {
+    window.localStorage.setItem(storageKeys.adminTokenTestState, stateValue || "never");
+    if (atValue) {
+      window.localStorage.setItem(storageKeys.adminTokenTestAt, atValue);
+    } else {
+      window.localStorage.removeItem(storageKeys.adminTokenTestAt);
+    }
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function updateAdminTokenVisibilityButton() {
+  if (!nodes.adminTokenToggleVisibility || !nodes.adminTokenInput) {
+    return;
+  }
+  nodes.adminTokenInput.type = state.adminTokenVisible ? "text" : "password";
+  nodes.adminTokenToggleVisibility.textContent = state.adminTokenVisible
+    ? t("security.hideToken")
+    : t("security.showToken");
+}
+
+function closeSecurityDetails() {
+  if (!nodes.securityDetails) {
+    return;
+  }
+  nodes.securityDetails.open = false;
+}
+
+
 function browserPreferredLanguage() {
   const browserLanguage = navigator.language || navigator.languages?.[0] || "en";
   return browserLanguage.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
+}
+
+function browserPreferredTheme() {
+  return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
 }
 
 function resolveLanguage(preference) {
@@ -812,9 +996,24 @@ function resolveLanguage(preference) {
   return browserPreferredLanguage();
 }
 
+function resolveTheme(preference) {
+  if (preference === "light" || preference === "dark") {
+    return preference;
+  }
+  return browserPreferredTheme();
+}
+
+function applyTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  if (nodes.themeSelect) {
+    nodes.themeSelect.value = state.themePreference;
+  }
+}
+
 function buildQuery() {
   const params = new URLSearchParams();
   if (state.languagePreference && state.languagePreference !== "auto") params.set("lang", state.languagePreference);
+  if (state.themePreference && state.themePreference !== "auto") params.set("theme", state.themePreference);
   if (state.activeTab && state.activeTab !== "overview") params.set("tab", state.activeTab);
   if (state.activeOverviewTab && state.activeOverviewTab !== "summary") params.set("overview", state.activeOverviewTab);
   if (state.activeRuntimeMainTab && state.activeRuntimeMainTab !== "select") params.set("runtimePane", state.activeRuntimeMainTab);
@@ -833,12 +1032,23 @@ function buildQuery() {
 function hydrateStateFromLocation() {
   const params = new URLSearchParams(window.location.search);
   const lang = params.get("lang");
+  const theme = params.get("theme");
   const storedPreference = getStoredLanguagePreference();
+  const storedThemePreference = getStoredThemePreference();
   state.languagePreference =
     (lang && (lang === "auto" || translations[lang])) ? lang :
       (storedPreference && (storedPreference === "auto" || translations[storedPreference])) ? storedPreference :
         "auto";
   state.language = resolveLanguage(state.languagePreference);
+  state.themePreference =
+    (theme && (theme === "auto" || theme === "light" || theme === "dark")) ? theme :
+      (storedThemePreference && (storedThemePreference === "auto" || storedThemePreference === "light" || storedThemePreference === "dark")) ? storedThemePreference :
+        "auto";
+  state.theme = resolveTheme(state.themePreference);
+  state.adminToken = getStoredAdminToken();
+  state.adminTokenVisible = false;
+  state.adminTokenTestState = getStoredAdminTokenTestState();
+  state.adminTokenTestAt = getStoredAdminTokenTestAt();
   state.activeTab = params.get("tab") || "overview";
   if (state.activeTab === "register") {
     state.activeTab = "runtimes";
@@ -880,6 +1090,9 @@ function applyTranslations() {
   document.documentElement.lang = state.language;
   document.title = `leserpent · ${t("hero.title")}`;
   nodes.languageSelect.value = state.languagePreference;
+  if (nodes.themeSelect) {
+    nodes.themeSelect.value = state.themePreference;
+  }
 
   for (const node of document.querySelectorAll("[data-i18n]")) {
     node.textContent = t(node.dataset.i18n);
@@ -897,6 +1110,19 @@ function applyTranslations() {
       option.textContent = t("language.english");
     } else if (option.value === "zh-CN") {
       option.textContent = t("language.simplifiedChinese");
+    }
+  }
+
+  if (nodes.themeSelect) {
+    const themeOptions = Array.from(nodes.themeSelect.options);
+    for (const option of themeOptions) {
+      if (option.value === "auto") {
+        option.textContent = t("theme.auto");
+      } else if (option.value === "light") {
+        option.textContent = t("theme.light");
+      } else if (option.value === "dark") {
+        option.textContent = t("theme.dark");
+      }
     }
   }
 }
@@ -975,13 +1201,11 @@ function renderRuntimePanelBlank(runtime, trust, url, view = state.runtimePanelV
 
   nodes.runtimePanelBlank.classList.remove("hidden");
   nodes.runtimePanelBlank.innerHTML = `
-    <div class="runtime-panel-blank-illustration" aria-hidden="true">···</div>
     <div class="runtime-panel-blank-copy">
       <strong>${escapeHtml(title)}</strong>
       <p>${escapeHtml(body)}</p>
       <div class="runtime-panel-blank-hints">
         <span class="tag-pill">${escapeHtml(hint)}</span>
-        <span class="item-meta">${escapeHtml(t("runtimePanel.blankHintEndpoint"))}: ${escapeHtml(url)}</span>
       </div>
     </div>
   `;
@@ -1179,10 +1403,45 @@ function runtimePanelTrustState(runtime, view = state.runtimePanelView) {
   };
 }
 
+async function testAdminToken() {
+  const token = state.adminToken?.trim();
+  if (!token) {
+    nodes.statusLine.textContent = t("security.tokenMissing");
+    nodes.securityDetails?.setAttribute("open", "open");
+    return;
+  }
+
+  state.adminTokenTestState = "running";
+  state.adminTokenTestAt = null;
+  setStoredAdminTokenTest(state.adminTokenTestState, state.adminTokenTestAt);
+  renderSecurityState();
+  nodes.statusLine.textContent = t("security.tokenTestRunning");
+  try {
+    const capabilities = await getJson("/v1/capabilities");
+    state.cache.capabilities = capabilities;
+    state.adminTokenTestState = "ok";
+    state.adminTokenTestAt = new Date().toLocaleString();
+    setStoredAdminTokenTest(state.adminTokenTestState, state.adminTokenTestAt);
+    nodes.statusLine.textContent = t("security.tokenTestOk");
+    renderSecurityState(capabilities);
+  } catch (error) {
+    console.error(error);
+    state.adminTokenTestState = "failed";
+    state.adminTokenTestAt = new Date().toLocaleString();
+    setStoredAdminTokenTest(state.adminTokenTestState, state.adminTokenTestAt);
+    const message = looksLikeTokenDenied(error.message)
+      ? t("security.tokenRequired")
+      : error.message;
+    nodes.statusLine.textContent = t("security.tokenTestFailed", { message });
+    renderSecurityState();
+    nodes.securityDetails?.setAttribute("open", "open");
+  }
+}
+
 async function getJson(path) {
-  const response = await fetch(path, { headers: { accept: "application/json" } });
+  const response = await fetch(path, { headers: apiHeaders() });
   if (!response.ok) {
-    throw new Error(`${path} -> ${response.status}`);
+    throw new Error(await decodeApiError(response, path));
   }
   return response.json();
 }
@@ -1190,13 +1449,10 @@ async function getJson(path) {
 async function postJson(path) {
   const response = await fetch(path, {
     method: "POST",
-    headers: {
-      accept: "application/json",
-      "x-leserpent-intent": "mutate",
-    },
+    headers: apiHeaders({ intent: "mutate" }),
   });
   if (!response.ok) {
-    throw new Error(`${path} -> ${response.status}`);
+    throw new Error(await decodeApiError(response, path));
   }
   return response.json();
 }
@@ -1204,11 +1460,7 @@ async function postJson(path) {
 async function postJsonBody(path, body) {
   const response = await fetch(path, {
     method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "x-leserpent-intent": "mutate",
-    },
+    headers: apiHeaders({ contentType: "application/json", intent: "mutate" }),
     body: JSON.stringify(body),
   });
 
@@ -1686,6 +1938,7 @@ function renderRuntimeDetail(runtime, attention) {
 function renderRuntimePanel(runtime) {
   if (!runtime) {
     nodes.runtimePanelChip.textContent = t("runtimePanel.notReady");
+    nodes.runtimePanelChip.classList.remove("hidden");
     nodes.runtimePanelBreadcrumb.classList.add("hidden");
     nodes.runtimePanelTrust.className = "runtime-panel-trust hidden";
     nodes.runtimePanelTrust.innerHTML = "";
@@ -1712,6 +1965,7 @@ function renderRuntimePanel(runtime) {
   const sidecarBadge = sidecarStatusBadge(runtime.sidecarStatus);
 
   nodes.runtimePanelChip.textContent = runtime.name;
+  nodes.runtimePanelChip.classList.add("hidden");
   nodes.runtimePanelBreadcrumb.classList.remove("hidden");
   nodes.runtimePanelBreadcrumb.innerHTML = `
     <span class="crumb-label">${escapeHtml(t("runtimePanel.breadcrumbFleet"))}</span>
@@ -1720,24 +1974,16 @@ function renderRuntimePanel(runtime) {
     <span class="crumb-value">${escapeHtml(sourceLabel)}</span>
     <span class="crumb-sep">/</span>
     <span class="crumb-value">${escapeHtml(viewLabel)}</span>
+    <span class="crumb-status ${escapeHtml(trust.tone)}">${escapeHtml(trust.label)}</span>
   `;
-  nodes.runtimePanelTrust.className = `runtime-panel-trust ${trust.tone}`;
-  nodes.runtimePanelTrust.innerHTML = `
-    <span class="runtime-panel-trust-title">${escapeHtml(t("runtimePanel.trustTitle"))}</span>
-    <span class="runtime-state ${escapeHtml(trust.tone)}">${escapeHtml(trust.label)}</span>
-    <span class="runtime-panel-trust-message">${escapeHtml(compactTrustMessage(trust, state.runtimePanelView))}</span>
-    <span class="runtime-panel-trust-meta">${escapeHtml(t("runtimePanel.trustMeta", { source: trust.source, snapshot: trust.snapshot }))}</span>
-    ${trust.refreshKind
-      ? `<button type="button" class="runtime-panel-trust-inline-action" data-runtime-panel-refresh="${escapeHtml(trust.refreshKind)}">${escapeHtml(trust.refreshKind === "sidecar" ? t("runtimePanel.trustRefreshSidecar") : t("runtimePanel.trustRefreshStatus"))}</button>`
-      : ""}
-  `;
-  const trustRefreshButton = nodes.runtimePanelTrust.querySelector("[data-runtime-panel-refresh]");
-  if (trustRefreshButton) {
-    trustRefreshButton.addEventListener("click", async () => {
-      await refreshRuntimeById(runtime.runtimeId, trustRefreshButton.dataset.runtimePanelRefresh);
-    });
+  nodes.runtimePanelTrust.className = "runtime-panel-trust hidden";
+  nodes.runtimePanelTrust.innerHTML = "";
+  nodes.runtimePanelSourceSwitch.classList.remove("hidden");
+  for (const button of nodes.runtimePanelSourceButtons) {
+    const isSidecar = button.dataset.runtimePanelSource === "sidecar";
+    button.disabled = isSidecar && !runtime.sidecarEndpoint;
+    button.classList.toggle("is-active", button.dataset.runtimePanelSource === source);
   }
-  nodes.runtimePanelSourceSwitch.classList.add("hidden");
   nodes.runtimePanelSourceBadges.classList.add("hidden");
   nodes.runtimePanelSourceBadges.innerHTML = "";
   nodes.runtimePanelActions.classList.remove("hidden");
@@ -1747,28 +1993,31 @@ function renderRuntimePanel(runtime) {
     tab.classList.toggle("hidden", tab.dataset.runtimePanelSource !== source);
   }
   const sidecarViewWithoutEndpoint = isSidecarView(state.runtimePanelView) && !runtime.sidecarEndpoint;
-  nodes.runtimePanelEmpty.classList.toggle("hidden", !sidecarViewWithoutEndpoint);
-  nodes.runtimePanelFrameWrap.classList.toggle("hidden", sidecarViewWithoutEndpoint);
+  nodes.runtimePanelEmpty.classList.add("hidden");
+  nodes.runtimePanelFrameWrap.classList.remove("hidden");
   if (sidecarViewWithoutEndpoint) {
-    nodes.runtimePanelEmpty.textContent = t("runtimePanel.trustNoSidecarMessage");
-    nodes.runtimePanelBlank.classList.add("hidden");
-    nodes.runtimePanelBlank.innerHTML = "";
+    renderRuntimePanelBlank(runtime, trust, "", state.runtimePanelView);
+    nodes.runtimePanelFrame.classList.add("hidden");
     nodes.runtimePanelFrame.src = "about:blank";
     nodes.runtimePanelUrl.textContent = "";
+    nodes.runtimePanelUrl.classList.add("hidden");
     nodes.runtimePanelOpenExternal.removeAttribute("href");
     return;
   }
-  nodes.runtimePanelUrl.textContent = `${t("runtimePanel.sourceUrl")}: ${url}`;
   const useBlankShell = shouldRenderRuntimePanelBlank(runtime, trust, state.runtimePanelView);
   if (useBlankShell) {
     renderRuntimePanelBlank(runtime, trust, url, state.runtimePanelView);
     nodes.runtimePanelFrame.classList.add("hidden");
     nodes.runtimePanelFrame.src = "about:blank";
+    nodes.runtimePanelUrl.textContent = "";
+    nodes.runtimePanelUrl.classList.add("hidden");
   } else {
     nodes.runtimePanelBlank.classList.add("hidden");
     nodes.runtimePanelBlank.innerHTML = "";
     nodes.runtimePanelFrame.classList.remove("hidden");
     nodes.runtimePanelFrame.src = url;
+    nodes.runtimePanelUrl.textContent = "";
+    nodes.runtimePanelUrl.classList.add("hidden");
   }
   nodes.runtimePanelOpenExternal.href = url;
   nodes.runtimePanelOpenExternal.target = "_blank";
@@ -1954,6 +2203,11 @@ async function loadDashboard() {
   } catch (error) {
     console.error(error);
     nodes.statusLine.textContent = t("notifications.dashboardLoadFailed", { message: error.message });
+    if (looksLikeTokenDenied(error.message)) {
+      renderSecurityState(null);
+      nodes.adminTokenState.textContent = t("security.tokenRequired");
+      nodes.securityDetails?.setAttribute("open", "open");
+    }
   }
 }
 
@@ -1985,10 +2239,7 @@ async function exportPersistenceState() {
   nodes.statusLine.textContent = t("persistence.exporting");
   try {
     const response = await fetch("/v1/persistence/export", {
-      headers: {
-        accept: "application/json",
-        "x-leserpent-intent": "export",
-      },
+      headers: apiHeaders({ intent: "export" }),
     });
     if (!response.ok) {
       throw new Error(`/v1/persistence/export -> ${response.status}`);
@@ -2034,11 +2285,7 @@ async function importPersistenceState(file) {
 
     const response = await fetch("/v1/persistence/import", {
       method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "x-leserpent-intent": "mutate",
-      },
+      headers: apiHeaders({ contentType: "application/json", intent: "mutate" }),
       body: JSON.stringify(parsed),
     });
     const payload = await response.json().catch(() => null);
@@ -2215,6 +2462,14 @@ nodes.languageSelect.addEventListener("change", () => {
   syncLocation();
 });
 
+nodes.themeSelect.addEventListener("change", () => {
+  state.themePreference = nodes.themeSelect.value;
+  state.theme = resolveTheme(state.themePreference);
+  setStoredThemePreference(state.themePreference);
+  applyTheme();
+  syncLocation();
+});
+
 nodes.applyFiltersButton.addEventListener("click", () => {
   state.filter.environment = nodes.environmentInput.value.trim();
   state.filter.cluster = nodes.clusterInput.value.trim();
@@ -2269,7 +2524,43 @@ nodes.registerFetchCapabilities.addEventListener("change", renderRegisterPreview
 nodes.registerForm.addEventListener("submit", submitRegisterForm);
 nodes.registerFormClear.addEventListener("click", clearRegisterForm);
 
+document.addEventListener("click", (event) => {
+  if (!nodes.securityDetails?.open) {
+    return;
+  }
+  if (!(event.target instanceof Node)) {
+    return;
+  }
+  if (!nodes.securityDetails.contains(event.target)) {
+    closeSecurityDetails();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && nodes.securityDetails?.open) {
+    closeSecurityDetails();
+  }
+});
+
+nodes.securityDetails?.addEventListener("toggle", () => {
+  if (nodes.securityDetails.open) {
+    window.setTimeout(() => {
+      nodes.adminTokenInput?.focus();
+      nodes.adminTokenInput?.select();
+    }, 0);
+  }
+});
+
+window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", () => {
+  if (state.themePreference !== "auto") {
+    return;
+  }
+  state.theme = resolveTheme(state.themePreference);
+  applyTheme();
+});
+
 hydrateStateFromLocation();
+applyTheme();
 applyTranslations();
 applyTabShell();
 clearRegisterForm();
