@@ -6,6 +6,7 @@
   --panel-2: #f8fbff;
   --ink: #0f1726;
   --muted: #4b5c76;
+  --ink-soft: #566985;
   --line: #bfd0e6;
   --line-strong: #8ea9c9;
   --accent: #1f5fa8;
@@ -26,7 +27,8 @@
   --panel: #0f1a2b;
   --panel-2: #152235;
   --ink: #edf4ff;
-  --muted: #bfd0ea;
+  --muted: #c7d8f2;
+  --ink-soft: #d7e4f9;
   --line: #315072;
   --line-strong: #5f83b2;
   --accent: #67a3ff;
@@ -1632,4 +1634,111 @@ td strong {
 
 .security-token-last-test {
   opacity: 0.86;
+}
+
+
+:root[data-theme="dark"] body {
+  color: #eef5ff;
+}
+
+:root[data-theme="dark"] .app-brand h1,
+:root[data-theme="dark"] .sidebar-head h2,
+:root[data-theme="dark"] .card h2,
+:root[data-theme="dark"] .card h3,
+:root[data-theme="dark"] .overview-spotlight-copy h2,
+:root[data-theme="dark"] .runtime-panel-blank-copy strong,
+:root[data-theme="dark"] td strong,
+:root[data-theme="dark"] .runtime-panel-breadcrumb .crumb-value,
+:root[data-theme="dark"] .security-details summary,
+:root[data-theme="dark"] .runtime-panel-trust-message,
+:root[data-theme="dark"] .metric-value,
+:root[data-theme="dark"] .overview-stat-value {
+  color: #f7fbff;
+}
+
+:root[data-theme="dark"] .subcopy,
+:root[data-theme="dark"] .compact-field span,
+:root[data-theme="dark"] .search-box span,
+:root[data-theme="dark"] .metric-label,
+:root[data-theme="dark"] .group-title,
+:root[data-theme="dark"] .item-meta,
+:root[data-theme="dark"] .reason-line,
+:root[data-theme="dark"] .hint-line,
+:root[data-theme="dark"] .sidebar-kicker,
+:root[data-theme="dark"] .language-picker span,
+:root[data-theme="dark"] .theme-picker span,
+:root[data-theme="dark"] label span,
+:root[data-theme="dark"] .footer,
+:root[data-theme="dark"] .security-token-state,
+:root[data-theme="dark"] .form-result,
+:root[data-theme="dark"] .runtime-panel-blank-copy p {
+  color: #cfddf4;
+}
+
+:root[data-theme="dark"] .tab-button,
+:root[data-theme="dark"] .runtime-main-tab-button,
+:root[data-theme="dark"] .runtime-detail-subtab-button,
+:root[data-theme="dark"] .overview-subtab-button,
+:root[data-theme="dark"] .runtime-panel-tab,
+:root[data-theme="dark"] .security-details summary,
+:root[data-theme="dark"] .runtime-panel-source-button,
+:root[data-theme="dark"] button:not(.primary):not(.quiet) {
+  color: #ecf4ff;
+}
+
+:root[data-theme="dark"] .tab-button.active,
+:root[data-theme="dark"] .runtime-main-tab-button.active,
+:root[data-theme="dark"] .runtime-detail-subtab-button.active,
+:root[data-theme="dark"] .overview-subtab-button.active,
+:root[data-theme="dark"] .runtime-panel-tab.is-active,
+:root[data-theme="dark"] button.primary {
+  color: #071321;
+}
+
+:root[data-theme="dark"] button.quiet {
+  color: #dbe8fb;
+}
+
+:root[data-theme="dark"] button:disabled {
+  opacity: 0.72;
+  color: #b8cae6;
+  border-color: rgba(95, 131, 178, 0.52);
+  background: linear-gradient(180deg, rgba(24, 37, 56, 0.92) 0%, rgba(18, 29, 45, 0.92) 100%);
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: #0e1828;
+  color: #f3f8ff;
+  border-color: #54739d;
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: #9db3d3;
+}
+
+:root[data-theme="dark"] th {
+  background: linear-gradient(180deg, rgba(31, 47, 72, 0.98) 0%, rgba(22, 35, 55, 0.98) 100%);
+  color: #e4efff;
+}
+
+:root[data-theme="dark"] td {
+  color: #e4eefc;
+}
+
+:root[data-theme="dark"] .runtime-register-footer .form-result,
+:root[data-theme="dark"] .register-preview,
+:root[data-theme="dark"] .security-details-body,
+:root[data-theme="dark"] .security-details summary,
+:root[data-theme="dark"] .sidebar-shell,
+:root[data-theme="dark"] .tab-shell,
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .app-chrome {
+  color: #ecf4ff;
+}
+
+:root[data-theme="dark"] .security-token-last-test {
+  opacity: 0.95;
 }

@@ -127,7 +127,8 @@ public sealed record ServiceCapabilities(
     string Role,
     IReadOnlyList<string> Routes,
     ServicePersistenceCapabilities? Persistence = null,
-    ServiceSecurityCapabilities? Security = null
+    ServiceSecurityCapabilities? Security = null,
+    ServiceRuntimePosture? RuntimePosture = null
 );
 
 public sealed record ServicePersistenceCapabilities(
@@ -147,6 +148,19 @@ public sealed record ServiceSecurityCapabilities(
     string ApiMode,
     bool AdminTokenConfigured,
     bool PublicEndpointDiscoveryAllowed
+);
+
+public sealed record ServiceRuntimePosture(
+    bool CoreReady,
+    bool PersistenceReady,
+    bool DegradedButOperable,
+    IReadOnlyList<ServiceOptionalAdapter> OptionalAdapters
+);
+
+public sealed record ServiceOptionalAdapter(
+    string Key,
+    string Status,
+    string Description
 );
 
 public sealed record PersistenceSaveResponse(

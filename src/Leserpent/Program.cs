@@ -52,6 +52,7 @@ public class Program
                 adminTokenConfigured = security.AdminTokenConfigured,
                 publicEndpointDiscoveryAllowed = security.PublicEndpointDiscoveryAllowed,
             },
+            runtimePosture = BuildRuntimePosture(stateStore),
             persistence = new
             {
                 statePath = stateStore.StatePath,
@@ -112,7 +113,8 @@ public class Program
                 new ServiceSecurityCapabilities(
                     security.ApiMode,
                     security.AdminTokenConfigured,
-                    security.PublicEndpointDiscoveryAllowed))));
+                    security.PublicEndpointDiscoveryAllowed),
+                BuildRuntimePosture(stateStore))));
 
         app.MapPost("/v1/persistence/save", (RegistryService registry) =>
             Results.Ok(new PersistenceSaveResponse(true, registry.SaveNow())));
@@ -516,6 +518,34 @@ public class Program
         app.MapFallbackToFile("index.html");
 
         app.Run();
+    }
+
+    private static ServiceRuntimePosture BuildRuntimePosture(ControlPlaneStateStore stateStore)
+    {
+        var persistenceReady = string.IsNullOrWhiteSpace(stateStore.LastSaveError);
+        return new ServiceRuntimePosture(
+            CoreReady: true,
+            PersistenceReady: persistenceReady,
+            DegradedButOperable: !persistenceReady,
+            OptionalAdapters: new[]
+            {
+                new ServiceOptionalAdapter(
+                    "docker_scenarios",
+                    "optional_unconfigured",
+                    "Docker-backed scenario launch and stack validation are optional helpers, not startup requirements."),
+                new ServiceOptionalAdapter(
+                    "local_process_launch",
+                    "optional_unconfigured",
+                    "Local process launch helpers should remain optional rather than part of the core boot contract."),
+                new ServiceOptionalAdapter(
+                    "remote_ssh_management",
+                    "optional_unconfigured",
+                    "Remote SSH-based management is an optional adapter and should not be required for local control-plane operation."),
+                new ServiceOptionalAdapter(
+                    "kubernetes_integration",
+                    "optional_unconfigured",
+                    "Future scheduler integration is optional and should not block the control plane from starting."),
+            });
     }
 }
 

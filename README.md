@@ -46,6 +46,19 @@ leserpent 是：
 * 可跨平台部署
 * 不建议部署普通客户端
 
+### Runtime posture
+
+`leserpent` 的运行时目标是：
+
+* 跨平台
+* 尽量纯用户态
+* 尽量少外部依赖
+* 在 runtime / sidecar 全部降级时自己仍然可操作
+
+更完整的运行边界见：
+
+* `docs/runtime-posture.md`
+
 ---
 
 ## 3. 连接模型
@@ -249,6 +262,20 @@ runtime：
 - 默认只允许 loopback 或私网地址
 - 如果你明确要让控制面抓公网 endpoint，需要设置：
   - `LESERPENT_ALLOW_PUBLIC_ENDPOINTS=true`
+
+当前 `/health` 和 `/v1/capabilities` 还会显式暴露 very-light runtime posture signals：
+
+- `runtimePosture.coreReady`
+- `runtimePosture.persistenceReady`
+- `runtimePosture.degradedButOperable`
+- `runtimePosture.optionalAdapters[]`
+
+这层的目标不是把 adapter system 一次做满，而是先把控制面的核心姿态说清楚：
+
+- 核心服务已经 ready
+- persistence 现在是否 healthy
+- 即使 persistence 降级，当前是否仍可操作
+- 哪些能力只是 optional adapters，而不是启动前提
 
 当前这些 very-light persistence signals 也会直接暴露出来：
 
